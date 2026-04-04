@@ -24,8 +24,13 @@ else
   echo "      See docs/k8s-setup.md Step 4"
 fi
 
-kubectl apply -f "${SCRIPT_DIR}/k8s/postgres-statefulset.yaml"
+kubectl apply -f "${SCRIPT_DIR}/k8s/postgres-cluster.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/valkey-deployment.yaml"
+
+echo "--- Waiting for PostgreSQL cluster to be ready ---"
+kubectl wait cluster/postgres-cluster -n "${NAMESPACE}" \
+  --for=condition=Ready --timeout=180s || echo "WARN: PostgreSQL cluster not ready yet — continuing"
+
 kubectl apply -f "${SCRIPT_DIR}/k8s/app-deployment.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/app-service.yaml"
 

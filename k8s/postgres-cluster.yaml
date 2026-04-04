@@ -1,0 +1,44 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+  namespace: url-shortener
+spec:
+  instances: 3
+
+  postgresql:
+    parameters:
+      shared_buffers: "256MB"
+      max_connections: "200"
+
+  enableSuperuserAccess: true
+  superuserSecret:
+    name: db-credentials
+
+  bootstrap:
+    initdb:
+      database: hackathon_db
+      owner: postgres
+      secret:
+        name: db-credentials
+
+  storage:
+    size: 5Gi
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: role
+                operator: In
+                values:
+                  - db
+
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 100m
+    limits:
+      memory: 1Gi
+      cpu: 500m

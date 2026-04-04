@@ -26,6 +26,9 @@ uv.lock
 # pytest
 .pytest_cache/
 
+.coverage
+htmlcov/
+
 # OS
 .DS_Store
 Thumbs.db

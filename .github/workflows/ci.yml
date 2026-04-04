@@ -46,6 +46,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v4
         with:
@@ -58,6 +60,11 @@ jobs:
         run: |
           uv run pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=70 --junitxml=pytest.xml | tee pytest-coverage.txt
 
+      - name: Diff coverage check
+        if: github.event_name == 'pull_request'
+        run: |
+          uv run diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --diff-range-notation=.. --fail-under=80 | tee diff-cover.txt
+
       - name: Pytest coverage comment
         if: github.event_name == 'pull_request'
         uses: MishaKav/pytest-coverage-comment@main
@@ -65,3 +72,4 @@ jobs:
           pytest-coverage-path: pytest-coverage.txt
           pytest-xml-coverage-path: coverage.xml
           junitxml-path: pytest.xml
+          report-only-changed-files: true

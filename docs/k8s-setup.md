@@ -12,7 +12,8 @@ This guide sets up a 3-node K3s high-availability cluster with embedded etcd, ru
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
 │  │ API pod      │    │ API pod      │    │ API pod      │     │
 │  │ PG primary   │    │ PG replica   │    │ PG replica   │     │
-│  │ Valkey       │    │              │    │              │     │
+│  │ Valkey master│    │ Valkey repl  │    │ Valkey repl  │     │
+│  │ Sentinel     │    │ Sentinel     │    │ Sentinel     │     │
 │  │ GH Runner    │    │              │    │              │     │
 │  └──────────────┘    └──────────────┘    └──────────────┘     │
 │                                                                 │
@@ -25,7 +26,7 @@ This guide sets up a 3-node K3s high-availability cluster with embedded etcd, ru
 
 - **API**: 3 replicas with pod anti-affinity (1 per node) — survives any single node failure
 - **PostgreSQL**: 3-instance CloudNativePG cluster (1 primary + 2 replicas) with automatic failover — survives any single node failure
-- **Valkey**: Single replica cache with graceful fallback
+- **Valkey**: 3-node Sentinel HA (1 master + 2 replicas + 3 sentinels) with automatic failover, graceful fallback in app
 - **Monitoring**: Prometheus scrapes `/metrics` from all API pods and PostgreSQL instances
 
 ## Prerequisites
@@ -205,7 +206,13 @@ kubectl apply -f k8s/secrets.yaml
 # Apply in order (or use the deploy script)
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/postgres-cluster.yaml
-kubectl apply -f k8s/valkey-deployment.yaml
+
+# Deploy Valkey HA (Sentinel mode) via Helm
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm upgrade --install valkey bitnami/valkey \
+  -n url-shortener \
+  -f k8s/valkey-values.yaml
 
 # Wait for the PostgreSQL cluster to be ready (1 primary + 2 replicas)
 kubectl get cluster -n url-shortener -w
@@ -355,7 +362,7 @@ kubectl get pods -n url-shortener -l cnpg.io/cluster=postgres-cluster \
 kubectl get pods -n url-shortener -o wide
 # Should show 3 url-shortener pods on 3 different nodes
 # 3 postgres-cluster pods (1 primary + 2 replicas)
-# 1 valkey pod
+# 3 valkey-node pods (1 master + 2 replicas, each with sentinel sidecar)
 ```
 
 ## Step 10: HA Verification

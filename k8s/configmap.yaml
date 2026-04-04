@@ -8,4 +8,4 @@ data:
   DATABASE_HOST: postgres-cluster-rw.url-shortener.svc.cluster.local
   DATABASE_PORT: "5432"
   DATABASE_USER: postgres
-  REDIS_URL: redis://valkey-svc.url-shortener.svc.cluster.local:6379/0
+  REDIS_URL: redis://valkey.url-shortener.svc.cluster.local:6379/0

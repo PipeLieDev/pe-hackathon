@@ -75,3 +75,50 @@ def test_create_event_user_not_found(client, sample_url):
         },
     )
     assert res.status_code == 404
+
+
+def test_url_create_logs_event(client, sample_user):
+    res = client.post(
+        "/urls",
+        json={
+            "user_id": sample_user,
+            "original_url": "https://example.com/test",
+        },
+    )
+    assert res.status_code == 201
+    url_data = res.json
+
+    events = client.get(f"/events?url_id={url_data['id']}&event_type=created")
+    assert events.status_code == 200
+    assert len(events.json) == 1
+    event = events.json[0]
+    assert event["event_type"] == "created"
+    assert event["details"]["short_code"] == url_data["short_code"]
+    assert event["details"]["original_url"] == "https://example.com/test"
+
+
+def test_url_update_logs_events(client, sample_user, sample_url):
+    res = client.put(
+        f"/urls/{sample_url}",
+        json={"title": "New Title", "is_active": False},
+    )
+    assert res.status_code == 200
+
+    events = client.get(f"/events?url_id={sample_url}&event_type=updated")
+    assert events.status_code == 200
+    assert len(events.json) == 2
+    fields = {e["details"]["field"] for e in events.json}
+    assert fields == {"title", "is_active"}
+
+
+def test_url_delete_cleans_up_events(client, sample_user, sample_url, sample_event):
+    events = client.get(f"/events?url_id={sample_url}")
+    assert events.status_code == 200
+    assert len(events.json) == 1
+
+    res = client.delete(f"/urls/{sample_url}")
+    assert res.status_code == 204
+
+    events = client.get(f"/events?url_id={sample_url}")
+    assert events.status_code == 200
+    assert len(events.json) == 0

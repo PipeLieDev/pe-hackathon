@@ -156,14 +156,7 @@ class UrlDetail(MethodView):
         if not url:
             abort(404, message="URL not found")
 
-        Event.create(
-            url_id=url.id,
-            user_id=url.user_id,
-            event_type="deleted",
-            timestamp=datetime.now(),
-            details=json.dumps({"reason": "user_requested"}),
-        )
-        EVENT_RECORDED.inc()
+        Event.delete().where(Event.url_id == url.id).execute()
         url.delete_instance()
         cache_delete(f"urls:{url_id}")
         cache_delete_pattern("urls:list:*")

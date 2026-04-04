@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--pico-primary); margin-bottom: 1rem; }
+        .tabs button { border: none; background: none; padding: 0.75rem 1.5rem; cursor: pointer; font-weight: 600; border-radius: 4px 4px 0 0; color: var(--pico-muted-color); }
+        .tabs button.active { background: var(--pico-primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        table { font-size: 0.9rem; }
+        .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+        .badge-active { background: #2ecc71; color: white; }
+        .badge-inactive { background: #e74c3c; color: white; }
+        pre { background: var(--pico-card-background-color); padding: 1rem; border-radius: 4px; overflow-x: auto; max-height: 300px; }
+        .pagination { display: flex; gap: 0.5rem; align-items: center; justify-content: center; margin-top: 1rem; }
+        header { margin-bottom: 2rem; }
+        .status-bar { padding: 0.5rem 1rem; border-radius: 4px; margin-bottom: 1rem; display: none; }
+        .status-bar.success { display: block; background: #d4edda; color: #155724; }
+        .status-bar.error { display: block; background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <h1>URL Shortener</h1>
+            <p>API Demo &amp; Testing Interface | <a href="/apidocs/" target="_blank">Swagger Docs</a> | <a href="/health" target="_blank">Health Check</a></p>
+        </header>
+
+        <div id="status" class="status-bar"></div>
+
+        <div class="tabs">
+            <button class="active" onclick="switchTab('users')">Users</button>
+            <button onclick="switchTab('urls')">URLs</button>
+            <button onclick="switchTab('events')">Events</button>
+        </div>
+
+        <!-- USERS TAB -->
+        <div id="tab-users" class="tab-content active">
+            <div class="actions">
+                <button onclick="loadUsers()">Refresh</button>
+                <button class="secondary" onclick="toggleForm('create-user-form')">Create User</button>
+                <button class="secondary" onclick="toggleForm('bulk-upload-form')">Bulk Import CSV</button>
+            </div>
+
+            <div id="create-user-form" style="display:none" class="card">
+                <h4>Create User</h4>
+                <div class="grid">
+                    <label>Username <input type="text" id="new-username" placeholder="username"></label>
+                    <label>Email <input type="email" id="new-email" placeholder="user@example.com"></label>
+                </div>
+                <button onclick="createUser()">Create</button>
+            </div>
+
+            <div id="bulk-upload-form" style="display:none" class="card">
+                <h4>Bulk Import Users (CSV)</h4>
+                <input type="file" id="csv-file" accept=".csv">
+                <button onclick="bulkUpload()">Upload</button>
+            </div>
+
+            <table>
+                <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Created At</th><th>Actions</th></tr></thead>
+                <tbody id="users-table"></tbody>
+            </table>
+            <div class="pagination" id="users-pagination"></div>
+        </div>
+
+        <!-- URLS TAB -->
+        <div id="tab-urls" class="tab-content">
+            <div class="actions">
+                <button onclick="loadUrls()">Refresh</button>
+                <button class="secondary" onclick="toggleForm('create-url-form')">Shorten URL</button>
+                <label style="display:flex;align-items:center;gap:0.5rem;margin:0">
+                    Filter by User ID: <input type="number" id="filter-user-id" style="width:100px;margin:0" onchange="loadUrls()">
+                </label>
+            </div>
+
+            <div id="create-url-form" style="display:none" class="card">
+                <h4>Shorten a URL</h4>
+                <div class="grid">
+                    <label>User ID <input type="number" id="url-user-id" placeholder="1"></label>
+                    <label>Original URL <input type="url" id="url-original" placeholder="https://example.com"></label>
+                    <label>Title <input type="text" id="url-title" placeholder="My Link"></label>
+                </div>
+                <button onclick="createUrl()">Shorten</button>
+            </div>
+
+            <table>
+                <thead><tr><th>ID</th><th>Short Code</th><th>Original URL</th><th>Title</th><th>User</th><th>Active</th><th>Actions</th></tr></thead>
+                <tbody id="urls-table"></tbody>
+            </table>
+            <div class="pagination" id="urls-pagination"></div>
+        </div>
+
+        <!-- EVENTS TAB -->
+        <div id="tab-events" class="tab-content">
+            <div class="actions">
+                <button onclick="loadEvents()">Refresh</button>
+                <label style="display:flex;align-items:center;gap:0.5rem;margin:0">
+                    Filter by type:
+                    <select id="filter-event-type" onchange="loadEvents()" style="width:150px;margin:0">
+                        <option value="">All</option>
+                        <option value="created">created</option>
+                        <option value="deleted">deleted</option>
+                    </select>
+                </label>
+            </div>
+
+            <table>
+                <thead><tr><th>ID</th><th>URL ID</th><th>User ID</th><th>Type</th><th>Timestamp</th><th>Details</th></tr></thead>
+                <tbody id="events-table"></tbody>
+            </table>
+            <div class="pagination" id="events-pagination"></div>
+        </div>
+    </main>
+
+    <script>
+        const state = {
+            usersPage: 1, urlsPage: 1, eventsPage: 1,
+            perPage: 20
+        };
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = 'status-bar ' + type;
+            setTimeout(() => { el.className = 'status-bar'; }, 4000);
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            event.target.classList.add('active');
+            if (name === 'users') loadUsers();
+            else if (name === 'urls') loadUrls();
+            else if (name === 'events') loadEvents();
+        }
+
+        function toggleForm(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function api(url, opts = {}) {
+            try {
+                const res = await fetch(url, opts);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                return data;
+            } catch (e) {
+                showStatus(e.message, 'error');
+                throw e;
+            }
+        }
+
+        function renderPagination(containerId, currentPage, itemCount, loadFn) {
+            const el = document.getElementById(containerId);
+            const hasPrev = currentPage > 1;
+            const hasNext = itemCount === state.perPage;
+            el.innerHTML = `
+                <button ${hasPrev ? '' : 'disabled'} onclick="${loadFn}(${currentPage - 1})">Prev</button>
+                <span>Page ${currentPage}</span>
+                <button ${hasNext ? '' : 'disabled'} onclick="${loadFn}(${currentPage + 1})">Next</button>
+            `;
+        }
+
+        // --- USERS ---
+        async function loadUsers(page) {
+            page = page || state.usersPage;
+            state.usersPage = page;
+            const users = await api(`/users?page=${page}&per_page=${state.perPage}`);
+            const tbody = document.getElementById('users-table');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td>${u.username}</td>
+                    <td>${u.email}</td>
+                    <td>${u.created_at}</td>
+                    <td><button class="outline" onclick="editUser(${u.id})">Edit</button></td>
+                </tr>
+            `).join('');
+            renderPagination('users-pagination', page, users.length, 'loadUsers');
+        }
+
+        async function createUser() {
+            const username = document.getElementById('new-username').value;
+            const email = document.getElementById('new-email').value;
+            await api('/users', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, email })
+            });
+            showStatus('User created!', 'success');
+            document.getElementById('new-username').value = '';
+            document.getElementById('new-email').value = '';
+            loadUsers();
+        }
+
+        async function editUser(id) {
+            const username = prompt('New username (leave empty to skip):');
+            if (username === null) return;
+            const body = {};
+            if (username) body.username = username;
+            await api(`/users/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            showStatus('User updated!', 'success');
+            loadUsers();
+        }
+
+        async function bulkUpload() {
+            const file = document.getElementById('csv-file').files[0];
+            if (!file) { showStatus('Select a CSV file first', 'error'); return; }
+            const form = new FormData();
+            form.append('file', file);
+            const data = await api('/users/bulk', { method: 'POST', body: form });
+            showStatus(`Imported ${data.imported} users!`, 'success');
+            loadUsers();
+        }
+
+        // --- URLS ---
+        async function loadUrls(page) {
+            page = page || state.urlsPage;
+            state.urlsPage = page;
+            let url = `/urls?page=${page}&per_page=${state.perPage}`;
+            const userId = document.getElementById('filter-user-id').value;
+            if (userId) url += `&user_id=${userId}`;
+            const urls = await api(url);
+            const tbody = document.getElementById('urls-table');
+            tbody.innerHTML = urls.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td><code>${u.short_code}</code></td>
+                    <td><a href="${u.original_url}" target="_blank">${u.original_url.substring(0, 50)}${u.original_url.length > 50 ? '...' : ''}</a></td>
+                    <td>${u.title}</td>
+                    <td>${u.user_id}</td>
+                    <td><span class="badge ${u.is_active ? 'badge-active' : 'badge-inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <button class="outline" onclick="editUrl(${u.id})">Edit</button>
+                        <button class="outline ${u.is_active ? 'secondary' : ''}" onclick="toggleUrl(${u.id}, ${!u.is_active})">${u.is_active ? 'Disable' : 'Enable'}</button>
+                    </td>
+                </tr>
+            `).join('');
+            renderPagination('urls-pagination', page, urls.length, 'loadUrls');
+        }
+
+        async function createUrl() {
+            const user_id = parseInt(document.getElementById('url-user-id').value);
+            const original_url = document.getElementById('url-original').value;
+            const title = document.getElementById('url-title').value;
+            const data = await api('/urls', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id, original_url, title })
+            });
+            showStatus(`URL shortened! Code: ${data.short_code}`, 'success');
+            document.getElementById('url-original').value = '';
+            document.getElementById('url-title').value = '';
+            loadUrls();
+        }
+
+        async function editUrl(id) {
+            const title = prompt('New title (leave empty to skip):');
+            if (title === null) return;
+            const body = {};
+            if (title) body.title = title;
+            await api(`/urls/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            showStatus('URL updated!', 'success');
+            loadUrls();
+        }
+
+        async function toggleUrl(id, active) {
+            await api(`/urls/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ is_active: active })
+            });
+            showStatus(`URL ${active ? 'enabled' : 'disabled'}!`, 'success');
+            loadUrls();
+        }
+
+        // --- EVENTS ---
+        async function loadEvents(page) {
+            page = page || state.eventsPage;
+            state.eventsPage = page;
+            let url = `/events?page=${page}&per_page=${state.perPage}`;
+            const eventType = document.getElementById('filter-event-type').value;
+            if (eventType) url += `&event_type=${eventType}`;
+            const events = await api(url);
+            const tbody = document.getElementById('events-table');
+            tbody.innerHTML = events.map(e => `
+                <tr>
+                    <td>${e.id}</td>
+                    <td>${e.url_id}</td>
+                    <td>${e.user_id}</td>
+                    <td><code>${e.event_type}</code></td>
+                    <td>${e.timestamp}</td>
+                    <td><pre>${JSON.stringify(e.details, null, 2)}</pre></td>
+                </tr>
+            `).join('');
+            renderPagination('events-pagination', page, events.length, 'loadEvents');
+        }
+
+        // Load initial data
+        loadUsers();
+    </script>
+</body>
+</html>

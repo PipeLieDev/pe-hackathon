@@ -147,3 +147,16 @@ class UserDetail(MethodView):
         cache_delete(f"users:{user_id}")
         cache_delete_pattern("users:list:*")
         return serialize_model(user)
+
+    @users_bp.response(204)
+    @users_bp.alt_response(404, schema=ErrorSchema)
+    def delete(self, user_id):
+        """Delete a user"""
+        user = User.get_or_none(User.id == user_id)
+        if not user:
+            abort(404, message="User not found")
+
+        user.delete_instance()
+        cache_delete(f"users:{user_id}")
+        cache_delete_pattern("users:list:*")
+        return ""

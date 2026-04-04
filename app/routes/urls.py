@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import request
+from flask import redirect, request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from peewee import IntegrityError
@@ -27,9 +27,10 @@ class UrlList(MethodView):
         Supports filtering by ?user_id= and pagination via ?page=&per_page=
         """
         user_id = request.args.get("user_id", type=int)
+        is_active = request.args.get("is_active")
         page = request.args.get("page", 1, type=int)
         per_page = request.args.get("per_page", 20, type=int)
-        cache_key = f"urls:list:{user_id}:{page}:{per_page}"
+        cache_key = f"urls:list:{user_id}:{is_active}:{page}:{per_page}"
         cached = cache_get(cache_key)
         if cached is not None:
             return cached
@@ -37,6 +38,8 @@ class UrlList(MethodView):
         query = Url.select().order_by(Url.id)
         if user_id:
             query = query.where(Url.user_id == user_id)
+        if is_active is not None:
+            query = query.where(Url.is_active == (is_active.lower() == "true"))
         urls = query.paginate(page, per_page)
 
         result = [serialize_model(u) for u in urls]
@@ -119,3 +122,29 @@ class UrlDetail(MethodView):
         cache_delete(f"urls:{url_id}")
         cache_delete_pattern("urls:list:*")
         return serialize_model(url)
+
+    @urls_bp.response(204)
+    @urls_bp.alt_response(404, schema=ErrorSchema)
+    def delete(self, url_id):
+        """Delete a URL"""
+        url = Url.get_or_none(Url.id == url_id)
+        if not url:
+            abort(404, message="URL not found")
+
+        url.delete_instance()
+        cache_delete(f"urls:{url_id}")
+        cache_delete_pattern("urls:list:*")
+        return ""
+
+
+@urls_bp.route("/<string:short_code>/redirect")
+class UrlRedirect(MethodView):
+    @urls_bp.alt_response(404, schema=ErrorSchema)
+    def get(self, short_code):
+        """Redirect to the original URL by short code"""
+        url = Url.get_or_none(Url.short_code == short_code)
+        if not url:
+            abort(404, message="URL not found")
+        if not url.is_active:
+            abort(404, message="URL is not active")
+        return redirect(url.original_url, code=302)

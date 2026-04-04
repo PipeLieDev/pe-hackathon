@@ -1,7 +1,8 @@
 from dotenv import load_dotenv
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
+from flask_smorest import Api
 
-from app.database import init_db
+from app.database import db, init_db
 from app.routes import register_routes
 
 
@@ -10,14 +11,30 @@ def create_app():
 
     app = Flask(__name__)
 
+    # flask-smorest / OpenAPI config
+    app.config["API_TITLE"] = "URL Shortener API"
+    app.config["API_VERSION"] = "v1"
+    app.config["OPENAPI_VERSION"] = "3.0.3"
+    app.config["OPENAPI_URL_PREFIX"] = "/apidocs"
+    app.config["OPENAPI_SWAGGER_UI_PATH"] = "/"
+    app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
+
     init_db(app)
 
-    from app import models  # noqa: F401 - registers models with Peewee
+    from app.models import Event, Url, User
 
-    register_routes(app)
+    with app.app_context():
+        db.create_tables([User, Url, Event])
+
+    api = Api(app)
+    register_routes(api)
 
     @app.route("/health")
     def health():
         return jsonify(status="ok")
+
+    @app.route("/")
+    def index():
+        return render_template("index.html")
 
     return app

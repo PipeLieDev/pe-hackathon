@@ -35,31 +35,32 @@ You need to work with around the seed files that you can find in [MLH PE Hackath
 
 ## Quick Start
 
-### Option 1: Local Development (without monitoring)
+### Option 1: Local Development
 
-**Prerequisites:** PostgreSQL running locally
+Uses `compose.dev.yml` which runs only the infrastructure services (PostgreSQL, Redis) — you run the app yourself with `uv`.
 
 ```bash
-# 1. Install PostgreSQL locally (macOS with Homebrew)
-brew install postgresql
-brew services start postgresql
-createdb hackathon_db
-
-# Or use Docker for just the database:
-docker run -d --name postgres -e POSTGRES_DB=hackathon_db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:18-alpine
+# 1. Start dev dependencies (DB + Redis)
+docker compose -f compose.dev.yml up -d
 
 # 2. Install dependencies
 uv sync
 
 # 3. Configure environment
-cp .env.example .env   # DATABASE_HOST=localhost for local dev
+cp .env.example .env   # DATABASE_HOST=localhost, DATABASE_PORT=5432
 
 # 4. Run the server
 uv run run.py
 
+# Or run with Gunicorn (production-like)
+uv run gunicorn run:app -b 0.0.0.0:5000
+
 # 5. Verify
 curl http://localhost:5000/health
 # → {"status":"ok"}
+
+# Stop dev dependencies when done
+docker compose -f compose.dev.yml down
 ```
 
 ### Option 2: Full Stack with Monitoring

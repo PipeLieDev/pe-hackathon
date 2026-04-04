@@ -1,0 +1,21 @@
+# Optional: Traefik Ingress (K3s built-in).
+# The NodePort service (app-service.yaml) is sufficient for the demo.
+# Use this if you want hostname-based routing.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: url-shortener-ingress
+  namespace: url-shortener
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: url-shortener-svc
+                port:
+                  number: 80

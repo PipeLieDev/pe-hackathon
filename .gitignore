@@ -32,3 +32,6 @@ Thumbs.db
 
 # Judging (not visible to participants)
 judging/
+
+# K8s secrets (contains passwords)
+k8s/secrets.yaml

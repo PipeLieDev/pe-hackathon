@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: url-shortener
+data:
+  DATABASE_NAME: hackathon_db
+  DATABASE_HOST: postgres-svc.url-shortener.svc.cluster.local
+  DATABASE_PORT: "5432"
+  DATABASE_USER: postgres
+  REDIS_URL: redis://redis-svc.url-shortener.svc.cluster.local:6379/0

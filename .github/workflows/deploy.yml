@@ -1,0 +1,40 @@
+name: Deploy to K3s
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Docker Image"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to K3s
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          else
+            TAG="${{ github.event.workflow_run.head_sha }}"
+          fi
+          echo "Deploying ghcr.io/${{ github.repository }}:${TAG}"
+          kubectl set image deployment/url-shortener \
+            url-shortener=ghcr.io/${{ github.repository }}:${TAG} \
+            -n url-shortener
+          kubectl rollout status deployment/url-shortener \
+            -n url-shortener --timeout=120s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n url-shortener -l app=url-shortener -o wide

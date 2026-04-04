@@ -83,13 +83,8 @@ class UserList(MethodView):
     @users_bp.alt_response(422, schema=ErrorSchema)
     def post(self, user_data):
         """Create a new user"""
-        username = user_data.get("username")
-        email = user_data.get("email")
-
-        if not username or not isinstance(username, str):
-            abort(422, message="username must be a non-empty string")
-        if not email or not isinstance(email, str):
-            abort(422, message="email must be a non-empty string")
+        username = user_data["username"]
+        email = user_data["email"]
 
         try:
             user = User.create(
@@ -124,12 +119,8 @@ class UserDetail(MethodView):
             abort(404, message="User not found")
 
         if "username" in user_data:
-            if not isinstance(user_data["username"], str):
-                abort(422, message="username must be a string")
             user.username = user_data["username"]
         if "email" in user_data:
-            if not isinstance(user_data["email"], str):
-                abort(422, message="email must be a string")
             user.email = user_data["email"]
 
         try:

@@ -41,14 +41,9 @@ class UrlList(MethodView):
     @urls_bp.alt_response(404, schema=ErrorSchema)
     def post(self, url_data):
         """Create a shortened URL"""
-        user_id = url_data.get("user_id")
-        original_url = url_data.get("original_url")
+        user_id = url_data["user_id"]
+        original_url = url_data["original_url"]
         title = url_data.get("title", "")
-
-        if not user_id:
-            abort(422, message="user_id is required")
-        if not original_url or not isinstance(original_url, str):
-            abort(422, message="original_url must be a non-empty string")
 
         user = User.get_or_none(User.id == user_id)
         if not user:

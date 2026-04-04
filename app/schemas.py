@@ -1,16 +1,16 @@
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, validate
 
 
 class UserSchema(Schema):
     id = fields.Int(dump_only=True)
-    username = fields.Str(required=True)
-    email = fields.Str(required=True)
+    username = fields.Str(required=True, validate=validate.Length(min=1))
+    email = fields.Email(required=True)
     created_at = fields.Str(dump_only=True)
 
 
 class UserUpdateSchema(Schema):
-    username = fields.Str()
-    email = fields.Str()
+    username = fields.Str(validate=validate.Length(min=1))
+    email = fields.Email()
 
 
 class UserBulkResponseSchema(Schema):
@@ -21,7 +21,7 @@ class UrlSchema(Schema):
     id = fields.Int(dump_only=True)
     user_id = fields.Int(required=True)
     short_code = fields.Str(dump_only=True)
-    original_url = fields.Str(required=True)
+    original_url = fields.Str(required=True, validate=validate.URL())
     title = fields.Str(load_default="")
     is_active = fields.Bool(dump_only=True)
     created_at = fields.Str(dump_only=True)
@@ -31,7 +31,7 @@ class UrlSchema(Schema):
 class UrlUpdateSchema(Schema):
     title = fields.Str()
     is_active = fields.Bool()
-    original_url = fields.Str()
+    original_url = fields.Str(validate=validate.URL())
 
 
 class EventDetailSchema(Schema):

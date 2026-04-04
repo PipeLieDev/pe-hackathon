@@ -77,3 +77,34 @@ def test_update_url(client, sample_url):
 def test_update_url_not_found(client):
     res = client.put("/urls/9999", json={"title": "x"})
     assert res.status_code == 404
+
+
+def test_delete_url(client, sample_url):
+    res = client.delete(f"/urls/{sample_url}")
+    assert res.status_code == 204
+
+    res = client.get(f"/urls/{sample_url}")
+    assert res.status_code == 404
+
+
+def test_delete_url_not_found(client):
+    res = client.delete("/urls/9999")
+    assert res.status_code == 404
+
+
+def test_redirect_url(client, sample_url):
+    res = client.get("/urls/abc123/redirect")
+    assert res.status_code == 302
+    assert res.headers["Location"] == "https://example.com"
+
+
+def test_redirect_url_not_found(client):
+    res = client.get("/urls/nonexist/redirect")
+    assert res.status_code == 404
+
+
+def test_redirect_inactive_url(client, sample_url):
+    """Inactive URLs should not redirect."""
+    client.put(f"/urls/{sample_url}", json={"is_active": False})
+    res = client.get("/urls/abc123/redirect")
+    assert res.status_code == 404

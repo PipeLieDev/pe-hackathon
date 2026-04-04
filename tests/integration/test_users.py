@@ -106,6 +106,19 @@ def test_bulk_import(client):
     assert res.json["imported"] == 2
 
 
+def test_delete_user(client, sample_user):
+    res = client.delete(f"/users/{sample_user}")
+    assert res.status_code == 204
+
+    res = client.get(f"/users/{sample_user}")
+    assert res.status_code == 404
+
+
+def test_delete_user_not_found(client):
+    res = client.delete("/users/9999")
+    assert res.status_code == 404
+
+
 def test_create_user_after_bulk_import(client):
     """Creating a user after bulk import should not conflict on ID sequence."""
     csv_data = "id,username,email,created_at\n10,bulkuser1,bulk1@test.com,2025-01-01 00:00:00\n11,bulkuser2,bulk2@test.com,2025-01-01 00:00:00\n"

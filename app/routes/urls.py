@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import request
+from flask import redirect, request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from peewee import IntegrityError
@@ -119,3 +119,29 @@ class UrlDetail(MethodView):
         cache_delete(f"urls:{url_id}")
         cache_delete_pattern("urls:list:*")
         return serialize_model(url)
+
+    @urls_bp.response(204)
+    @urls_bp.alt_response(404, schema=ErrorSchema)
+    def delete(self, url_id):
+        """Delete a URL"""
+        url = Url.get_or_none(Url.id == url_id)
+        if not url:
+            abort(404, message="URL not found")
+
+        url.delete_instance()
+        cache_delete(f"urls:{url_id}")
+        cache_delete_pattern("urls:list:*")
+        return ""
+
+
+@urls_bp.route("/<string:short_code>/redirect")
+class UrlRedirect(MethodView):
+    @urls_bp.alt_response(404, schema=ErrorSchema)
+    def get(self, short_code):
+        """Redirect to the original URL by short code"""
+        url = Url.get_or_none(Url.short_code == short_code)
+        if not url:
+            abort(404, message="URL not found")
+        if not url.is_active:
+            abort(404, message="URL is not active")
+        return redirect(url.original_url, code=302)

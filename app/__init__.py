@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template
+from flask import Flask, g, jsonify, render_template
 from flask_smorest import Api
 
 from app.database import db, init_db
@@ -24,7 +24,13 @@ def create_app():
     from app.models import Event, Url, User
 
     with app.app_context():
-        db.create_tables([User, Url, Event])
+        db.create_tables([User, Url, Event], safe=True)
+
+    @app.after_request
+    def add_cache_header(response):
+        if hasattr(g, "x_cache"):
+            response.headers["X-Cache"] = g.x_cache
+        return response
 
     api = Api(app)
     register_routes(api)

@@ -13,11 +13,13 @@ dependencies = [
     "psycopg2-binary>=2.9",
     "python-dotenv>=1.0",
     "python-json-logger>=4.1.0",
+    "redis>=7.4.0",
     "structlog>=25.5.0",
 ]
 
 [dependency-groups]
 dev = [
+    "locust>=2.43.4",
     "pytest>=9.0.2",
     "pytest-cov>=7.1.0",
 ]

@@ -9,6 +9,7 @@ from peewee import IntegrityError
 from playhouse.shortcuts import chunked
 
 from app import USER_REGISTERED
+from app.cache import cache_delete, cache_delete_pattern, cache_get, cache_set
 from app.database import db
 from app.models.user import User
 from app.schemas import (
@@ -70,14 +71,20 @@ class UserList(MethodView):
 
         Supports pagination via ?page=1&per_page=20
         """
-        query = User.select().order_by(User.id)
-
         page = request.args.get("page", type=int)
         per_page = request.args.get("per_page", type=int)
+        cache_key = f"users:list:{page}:{per_page}"
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return cached
+
+        query = User.select().order_by(User.id)
         if page is not None and per_page is not None:
             query = query.paginate(page, per_page)
 
-        return [serialize_model(u) for u in query]
+        result = [serialize_model(u) for u in query]
+        cache_set(cache_key, result, ttl=30)
+        return result
 
     @users_bp.arguments(UserSchema)
     @users_bp.response(201, UserSchema)
@@ -106,10 +113,17 @@ class UserDetail(MethodView):
     @users_bp.alt_response(404, schema=ErrorSchema)
     def get(self, user_id):
         """Get a user by ID"""
+        cache_key = f"users:{user_id}"
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return cached
+
         user = User.get_or_none(User.id == user_id)
         if not user:
             abort(404, message="User not found")
-        return serialize_model(user)
+        result = serialize_model(user)
+        cache_set(cache_key, result, ttl=30)
+        return result
 
     @users_bp.arguments(UserUpdateSchema)
     @users_bp.response(200, UserSchema)
@@ -130,4 +144,6 @@ class UserDetail(MethodView):
         except IntegrityError:
             abort(409, message="Email already exists")
 
+        cache_delete(f"users:{user_id}")
+        cache_delete_pattern("users:list:*")
         return serialize_model(user)

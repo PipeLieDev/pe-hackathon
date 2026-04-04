@@ -6,6 +6,7 @@ from flask_smorest import Blueprint, abort
 from peewee import IntegrityError
 
 from app import URL_CREATED
+from app.cache import cache_delete, cache_delete_pattern, cache_get, cache_set
 from app.database import db
 from app.models.url import Url
 from app.models.user import User
@@ -25,17 +26,22 @@ class UrlList(MethodView):
 
         Supports filtering by ?user_id= and pagination via ?page=&per_page=
         """
-        query = Url.select().order_by(Url.id)
-
         user_id = request.args.get("user_id", type=int)
-        if user_id:
-            query = query.where(Url.user_id == user_id)
-
         page = request.args.get("page", 1, type=int)
         per_page = request.args.get("per_page", 20, type=int)
+        cache_key = f"urls:list:{user_id}:{page}:{per_page}"
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return cached
+
+        query = Url.select().order_by(Url.id)
+        if user_id:
+            query = query.where(Url.user_id == user_id)
         urls = query.paginate(page, per_page)
 
-        return [serialize_model(u) for u in urls]
+        result = [serialize_model(u) for u in urls]
+        cache_set(cache_key, result, ttl=30)
+        return result
 
     @urls_bp.arguments(UrlSchema)
     @urls_bp.response(201, UrlSchema)
@@ -79,10 +85,17 @@ class UrlDetail(MethodView):
     @urls_bp.alt_response(404, schema=ErrorSchema)
     def get(self, url_id):
         """Get a URL by ID"""
+        cache_key = f"urls:{url_id}"
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return cached
+
         url = Url.get_or_none(Url.id == url_id)
         if not url:
             abort(404, message="URL not found")
-        return serialize_model(url)
+        result = serialize_model(url)
+        cache_set(cache_key, result, ttl=30)
+        return result
 
     @urls_bp.arguments(UrlUpdateSchema)
     @urls_bp.response(200, UrlSchema)
@@ -103,4 +116,6 @@ class UrlDetail(MethodView):
         url.updated_at = datetime.now()
         url.save()
 
+        cache_delete(f"urls:{url_id}")
+        cache_delete_pattern("urls:list:*")
         return serialize_model(url)

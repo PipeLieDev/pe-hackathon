@@ -239,6 +239,49 @@ def load_csv(filepath):
             Product.insert_many(batch).execute()
 ```
 
+## Running Tests
+
+Tests are split into **unit** and **integration** directories:
+
+```
+tests/
+├── conftest.py                  # App factory + client (shared)
+├── unit/                        # Fast, no database required
+│   ├── test_utils.py
+│   └── test_schemas.py
+└── integration/                 # Requires PostgreSQL (hackathon_test_db)
+    ├── conftest.py              # DB cleanup + sample data fixtures
+    ├── test_health.py
+    ├── test_users.py
+    ├── test_urls.py
+    └── test_events.py
+```
+
+```bash
+# 1. Make sure PostgreSQL is running (via Docker Compose)
+docker compose up -d db
+
+# 2. Create the test database (first time only)
+docker exec pe-hackathon-db-1 psql -U postgres -c "CREATE DATABASE hackathon_test_db;"
+
+# 3. Run all tests
+uv run pytest
+
+# 4. Run only unit tests (no DB needed)
+uv run pytest tests/unit
+
+# 5. Run only integration tests
+uv run pytest tests/integration
+
+# 6. Run tests with coverage report
+uv run pytest --cov=app --cov-report=term-missing
+
+# 7. Run a specific test file
+uv run pytest tests/integration/test_users.py -v
+```
+
+You can override the test database name with the `TEST_DATABASE_NAME` environment variable.
+
 ## Useful Peewee Patterns
 
 ```python

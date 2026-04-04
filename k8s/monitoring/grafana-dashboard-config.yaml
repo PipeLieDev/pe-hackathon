@@ -1,0 +1,7 @@
+# This ConfigMap is generated from the dashboard JSON file.
+# Create it with:
+#   kubectl create configmap grafana-dashboards \
+#     --from-file=url-shortener.json=docs/IncidentReportQuest/grafanaDashboard.json \
+#     -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+#
+# The deploy script handles this automatically.

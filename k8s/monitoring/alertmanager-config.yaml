@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+data:
+  config.yml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'alerts@example.com'
+
+    route:
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'discord'
+      routes:
+        - match:
+            severity: critical
+          receiver: 'discord-critical'
+
+    receivers:
+      - name: 'discord'
+        discord_configs:
+          - webhook_url: 'https://discord.com/api/webhooks/1489846467761012776/xs1v7ryjAoRK4Q3VDlYzUdXS4BOvdxLw59uDWPRmaVXEKJdedvbiE0Tcx4OxjC3vHsjn'
+            send_resolved: true
+            content: |
+              {{ range .Alerts }}**{{ .Labels.alertname }}**
+              {{ .Annotations.summary }}
+              {{ .Annotations.description }}
+              {{ end }}
+
+      - name: 'discord-critical'
+        discord_configs:
+          - webhook_url: 'https://discord.com/api/webhooks/1489846467761012776/xs1v7ryjAoRK4Q3VDlYzUdXS4BOvdxLw59uDWPRmaVXEKJdedvbiE0Tcx4OxjC3vHsjn'
+            send_resolved: true
+            content: |
+              {{ range .Alerts }}**{{ .Labels.alertname }}**
+              {{ .Annotations.summary }}
+              {{ .Annotations.description }}
+              {{ end }}

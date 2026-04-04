@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: monitoring
+data:
+  config.yml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: http://loki-svc.monitoring.svc.cluster.local:3100/loki/api/v1/push
+
+    scrape_configs:
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - url-shortener
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: url-shortener
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+        pipeline_stages:
+          - json:
+              expressions:
+                level: level
+                message: message
+                timestamp: timestamp
+          - labels:
+              level:

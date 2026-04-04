@@ -1,8 +1,8 @@
 """
-Redis cache helpers.
+Valkey/Redis cache helpers.
 
-Falls back to a no-op if Redis is unavailable or REDIS_URL is not set,
-so the app works fine without Redis in dev.
+Falls back to a no-op if Valkey is unavailable or REDIS_URL is not set,
+so the app works fine without Valkey in dev.
 """
 
 import json

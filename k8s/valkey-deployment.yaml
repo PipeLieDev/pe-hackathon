@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-svc
+  name: valkey-svc
   namespace: url-shortener
 spec:
   selector:
-    app: redis
+    app: valkey
   ports:
     - port: 6379
       targetPort: 6379
@@ -13,34 +13,34 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis
+  name: valkey
   namespace: url-shortener
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: redis
+      app: valkey
   template:
     metadata:
       labels:
-        app: redis
+        app: valkey
     spec:
       containers:
-        - name: redis
-          image: redis:7-alpine
+        - name: valkey
+          image: valkey/valkey:8-alpine
           ports:
             - containerPort: 6379
           livenessProbe:
             exec:
               command:
-                - redis-cli
+                - valkey-cli
                 - ping
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             exec:
               command:
-                - redis-cli
+                - valkey-cli
                 - ping
             initialDelaySeconds: 3
             periodSeconds: 5

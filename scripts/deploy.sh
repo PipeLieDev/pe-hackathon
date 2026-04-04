@@ -25,7 +25,7 @@ else
 fi
 
 kubectl apply -f "${SCRIPT_DIR}/k8s/postgres-statefulset.yaml"
-kubectl apply -f "${SCRIPT_DIR}/k8s/redis-deployment.yaml"
+kubectl apply -f "${SCRIPT_DIR}/k8s/valkey-deployment.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/app-deployment.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/app-service.yaml"
 

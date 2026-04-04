@@ -21,6 +21,16 @@ def test_list_urls_filter_by_user(client, sample_url, sample_user):
     assert len(res.json) == 0
 
 
+def test_list_urls_filter_by_is_active(client, sample_url):
+    res = client.get("/urls?is_active=true")
+    assert res.status_code == 200
+    assert len(res.json) == 1
+
+    res = client.get("/urls?is_active=false")
+    assert res.status_code == 200
+    assert len(res.json) == 0
+
+
 def test_get_url(client, sample_url):
     res = client.get(f"/urls/{sample_url}")
     assert res.status_code == 200

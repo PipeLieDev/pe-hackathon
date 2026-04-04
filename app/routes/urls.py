@@ -27,9 +27,10 @@ class UrlList(MethodView):
         Supports filtering by ?user_id= and pagination via ?page=&per_page=
         """
         user_id = request.args.get("user_id", type=int)
+        is_active = request.args.get("is_active")
         page = request.args.get("page", 1, type=int)
         per_page = request.args.get("per_page", 20, type=int)
-        cache_key = f"urls:list:{user_id}:{page}:{per_page}"
+        cache_key = f"urls:list:{user_id}:{is_active}:{page}:{per_page}"
         cached = cache_get(cache_key)
         if cached is not None:
             return cached
@@ -37,6 +38,8 @@ class UrlList(MethodView):
         query = Url.select().order_by(Url.id)
         if user_id:
             query = query.where(Url.user_id == user_id)
+        if is_active is not None:
+            query = query.where(Url.is_active == (is_active.lower() == "true"))
         urls = query.paginate(page, per_page)
 
         result = [serialize_model(u) for u in urls]

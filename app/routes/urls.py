@@ -5,6 +5,7 @@ from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from peewee import IntegrityError
 
+from app import URL_CREATED
 from app.cache import cache_delete, cache_delete_pattern, cache_get, cache_set
 from app.database import db
 from app.models.url import Url
@@ -70,6 +71,7 @@ class UrlList(MethodView):
                         created_at=now,
                         updated_at=now,
                     )
+                URL_CREATED.inc()  # Increment metric
                 return serialize_model(url)
             except IntegrityError:
                 continue

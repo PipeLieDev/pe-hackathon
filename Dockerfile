@@ -7,11 +7,13 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install dependencies
 COPY pyproject.toml uv.lock ./
-RUN uv sync --no-dev --frozen
+RUN uv sync --frozen --no-install-project
 
-# Copy application code
+# Copy source code
 COPY . .
 
+# Expose port
 EXPOSE 5000
 
+# Run the application
 CMD ["uv", "run", "gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "run:app"]

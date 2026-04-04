@@ -1,6 +1,6 @@
 # K3s HA Cluster Setup Guide
 
-This guide sets up a 3-node K3s high-availability cluster with embedded etcd, running the URL Shortener API, PostgreSQL, Redis, and a full monitoring stack (Prometheus, Grafana, Loki, Alertmanager).
+This guide sets up a 3-node K3s high-availability cluster with embedded etcd, running the URL Shortener API, PostgreSQL, Valkey, and a full monitoring stack (Prometheus, Grafana, Loki, Alertmanager).
 
 ## Architecture
 
@@ -12,7 +12,7 @@ This guide sets up a 3-node K3s high-availability cluster with embedded etcd, ru
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
 │  │ API pod      │    │ API pod      │    │ API pod      │     │
 │  │ PostgreSQL   │    │              │    │              │     │
-│  │ Redis        │    │              │    │              │     │
+│  │ Valkey        │    │              │    │              │     │
 │  │ GH Runner    │    │              │    │              │     │
 │  └──────────────┘    └──────────────┘    └──────────────┘     │
 │                                                                 │
@@ -24,7 +24,7 @@ This guide sets up a 3-node K3s high-availability cluster with embedded etcd, ru
 
 - **API**: 3 replicas with pod anti-affinity (1 per node) — survives any single node failure
 - **PostgreSQL**: Pinned to Node .110 for data consistency (single-node stateful workload)
-- **Redis**: Single replica cache with graceful fallback
+- **Valkey**: Single replica cache with graceful fallback
 - **Monitoring**: Prometheus scrapes `/metrics` from all API pods
 
 ## Prerequisites
@@ -160,7 +160,7 @@ kubectl apply -f k8s/secrets.yaml
 # Apply in order (or use the deploy script)
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/postgres-statefulset.yaml
-kubectl apply -f k8s/redis-deployment.yaml
+kubectl apply -f k8s/valkey-deployment.yaml
 kubectl apply -f k8s/app-deployment.yaml
 kubectl apply -f k8s/app-service.yaml
 
@@ -293,7 +293,7 @@ Password: admin
 kubectl get pods -n url-shortener -o wide
 # Should show 3 url-shortener pods on 3 different nodes
 # 1 postgres pod on the .110 node
-# 1 redis pod
+# 1 valkey pod
 ```
 
 ## Step 9: HA Verification
@@ -305,7 +305,7 @@ kubectl get pods -n url-shortener -o wide
    done
    ```
 
-2. If a node goes down (**.111 or .112**, NOT .110 — that runs PostgreSQL and Redis):
+2. If a node goes down (**.111 or .112**, NOT .110 — that runs PostgreSQL and Valkey):
    ```bash
    kubectl get nodes
    # Offline node shows "NotReady"

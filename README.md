@@ -37,10 +37,10 @@ You need to work with around the seed files that you can find in [MLH PE Hackath
 
 ### Option 1: Local Development
 
-Uses `compose.dev.yml` which runs only the infrastructure services (PostgreSQL, Redis) — you run the app yourself with `uv`.
+Uses `compose.dev.yml` which runs only the infrastructure services (PostgreSQL, Valkey) — you run the app yourself with `uv`.
 
 ```bash
-# 1. Start dev dependencies (DB + Redis)
+# 1. Start dev dependencies (DB + Valkey)
 docker compose -f compose.dev.yml up -d
 
 # 2. Install dependencies
@@ -259,10 +259,11 @@ tests/
 ```
 
 ```bash
-# 1. Make sure PostgreSQL is running (via Docker Compose)
-docker compose up -d db
+# 1. Start dev dependencies (DB + Valkey)
+docker compose -f compose.dev.yml up -d
 
 # 2. Create the test database (first time only)
+docker exec pe-hackathon-valkey-1 valkey-cli ping  # verify Valkey is up
 docker exec pe-hackathon-db-1 psql -U postgres -c "CREATE DATABASE hackathon_test_db;"
 
 # 3. Run all tests

@@ -11,11 +11,13 @@ This guide sets up a 3-node K3s high-availability cluster with embedded etcd, ru
 │  Node .110            Node .111            Node .112            │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
 │  │ API pod      │    │ API pod      │    │ API pod      │     │
-│  │ PostgreSQL   │    │              │    │              │     │
-│  │ Valkey        │    │              │    │              │     │
+│  │ PG primary   │    │ PG replica   │    │ PG replica   │     │
+│  │ Valkey master│    │ Valkey repl  │    │ Valkey repl  │     │
+│  │ Sentinel     │    │ Sentinel     │    │ Sentinel     │     │
 │  │ GH Runner    │    │              │    │              │     │
 │  └──────────────┘    └──────────────┘    └──────────────┘     │
 │                                                                 │
+│  CloudNativePG operator (cnpg-system ns)                       │
 │  Prometheus + Grafana + Loki + Alertmanager (monitoring ns)    │
 │                                                                 │
 │  NodePort: 30080 (API), 30030 (Grafana), 30090 (Prometheus)   │
@@ -23,9 +25,9 @@ This guide sets up a 3-node K3s high-availability cluster with embedded etcd, ru
 ```
 
 - **API**: 3 replicas with pod anti-affinity (1 per node) — survives any single node failure
-- **PostgreSQL**: Pinned to Node .110 for data consistency (single-node stateful workload)
-- **Valkey**: Single replica cache with graceful fallback
-- **Monitoring**: Prometheus scrapes `/metrics` from all API pods
+- **PostgreSQL**: 3-instance CloudNativePG cluster (1 primary + 2 replicas) with automatic failover — survives any single node failure
+- **Valkey**: 3-node Sentinel HA (1 master + 2 replicas + 3 sentinels) with automatic failover, graceful fallback in app
+- **Monitoring**: Prometheus scrapes `/metrics` from all API pods and PostgreSQL instances
 
 ## Prerequisites
 
@@ -114,19 +116,63 @@ sed -i 's/127.0.0.1/192.168.1.110/' ~/.kube/config
 kubectl get nodes
 ```
 
-## Step 3: Label Nodes
+## Step 3: Install Helm
 
-Label Node 1 for PostgreSQL placement:
+Helm is required to install the CloudNativePG operator.
+
+### Option A: Install script (recommended)
+
+```bash
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+### Option B: Apt (Debian/Ubuntu)
+
+```bash
+sudo apt-get install curl gpg apt-transport-https --yes
+curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
+```
+
+### Option C: Snap
+
+```bash
+sudo snap install helm --classic
+```
+
+### Verify
+
+```bash
+helm version
+```
+
+## Step 4: Label Nodes and Install CloudNativePG Operator
+
+Label all database nodes and install the CNPG operator:
 
 ```bash
 # Get node names
 kubectl get nodes
 
-# Label the .110 node for database workloads
+# Label all nodes for database workloads
 kubectl label node <node-110-name> role=db
+kubectl label node <node-111-name> role=db
+kubectl label node <node-112-name> role=db
+
+# Install CloudNativePG operator via Helm
+helm repo add cnpg https://cloudnative-pg.github.io/charts
+helm repo update
+helm install cnpg cnpg/cloudnative-pg -n cnpg-system --create-namespace
+
+# Verify the operator is running
+kubectl get pods -n cnpg-system
 ```
 
-## Step 4: Create Namespaces and Secrets
+## Step 5: Create Namespaces and Secrets
 
 ```bash
 # Apply namespaces
@@ -154,17 +200,28 @@ kubectl apply -f k8s/secrets.yaml
 2. Generate new token with `read:packages` scope
 3. Use this token as `--docker-password` above
 
-## Step 5: Deploy Application Stack
+## Step 6: Deploy Application Stack
 
 ```bash
 # Apply in order (or use the deploy script)
 kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/postgres-statefulset.yaml
-kubectl apply -f k8s/valkey-deployment.yaml
+kubectl apply -f k8s/postgres-cluster.yaml
+
+# Deploy Valkey HA (Sentinel mode) via Helm
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm upgrade --install valkey bitnami/valkey \
+  -n url-shortener \
+  -f k8s/valkey-values.yaml
+
+# Wait for the PostgreSQL cluster to be ready (1 primary + 2 replicas)
+kubectl get cluster -n url-shortener -w
+# STATUS should show "Cluster in healthy state"
+
 kubectl apply -f k8s/app-deployment.yaml
 kubectl apply -f k8s/app-service.yaml
 
-# Wait for pods to be ready
+# Wait for all pods to be ready
 kubectl get pods -n url-shortener -w
 ```
 
@@ -175,7 +232,7 @@ chmod +x scripts/deploy.sh
 ./scripts/deploy.sh
 ```
 
-## Step 6: Deploy Monitoring Stack
+## Step 7: Deploy Monitoring Stack
 
 ```bash
 # Prometheus
@@ -207,7 +264,7 @@ kubectl apply -f k8s/monitoring/grafana-deployment.yaml
 kubectl get pods -n monitoring
 ```
 
-## Step 7: Set Up Self-Hosted GitHub Actions Runner
+## Step 8: Set Up Self-Hosted GitHub Actions Runner
 
 The servers are behind NAT, so we use a self-hosted runner on Node .110 for automated deployments.
 
@@ -256,7 +313,7 @@ sudo ./svc.sh start
 sudo ./svc.sh status
 ```
 
-## Step 8: Verify Everything
+## Step 9: Verify Everything
 
 ### API Health
 
@@ -287,16 +344,28 @@ Username: admin
 Password: admin
 ```
 
+### PostgreSQL Cluster Health
+
+```bash
+# Check CNPG cluster status
+kubectl get cluster -n url-shortener
+# STATUS should show "Cluster in healthy state", READY "3/3"
+
+# Check which instance is the primary
+kubectl get pods -n url-shortener -l cnpg.io/cluster=postgres-cluster \
+  -o custom-columns=NAME:.metadata.name,ROLE:.metadata.labels.role,NODE:.spec.nodeName
+```
+
 ### Pod Distribution
 
 ```bash
 kubectl get pods -n url-shortener -o wide
 # Should show 3 url-shortener pods on 3 different nodes
-# 1 postgres pod on the .110 node
-# 1 valkey pod
+# 3 postgres-cluster pods (1 primary + 2 replicas)
+# 3 valkey-node pods (1 master + 2 replicas, each with sentinel sidecar)
 ```
 
-## Step 9: HA Verification
+## Step 10: HA Verification
 
 1. Verify all 3 API endpoints respond:
    ```bash
@@ -305,22 +374,30 @@ kubectl get pods -n url-shortener -o wide
    done
    ```
 
-2. If a node goes down (**.111 or .112**, NOT .110 — that runs PostgreSQL and Valkey):
+2. Verify PostgreSQL HA — if **any** node goes down:
    ```bash
    kubectl get nodes
    # Offline node shows "NotReady"
 
    kubectl get pods -n url-shortener -o wide
    # 2 API pods running, 1 in Unknown/Terminating state
+
+   # CNPG handles PostgreSQL failover automatically:
+   kubectl get cluster -n url-shortener
+   # If the primary node went down, a replica is promoted within ~30s
+
+   # Check the new primary
+   kubectl get pods -n url-shortener -l cnpg.io/cluster=postgres-cluster \
+     -o custom-columns=NAME:.metadata.name,ROLE:.metadata.labels.role
    ```
 
-3. Remaining nodes continue serving traffic:
+3. Remaining nodes continue serving traffic (including database writes):
    ```bash
-   curl http://192.168.1.110:30080/health
-   curl http://192.168.1.<remaining-node>:30080/health
+   curl http://192.168.1.<remaining-node-1>:30080/health
+   curl http://192.168.1.<remaining-node-2>:30080/health
    ```
 
-4. When the node comes back online, it rejoins the cluster automatically.
+4. When the node comes back online, it rejoins the cluster automatically. CNPG will re-add the PostgreSQL instance as a replica.
 
 ## Troubleshooting
 
@@ -333,19 +410,43 @@ kubectl delete secret ghcr-pull-secret -n url-shortener
 # Recreate with correct credentials (Step 4)
 ```
 
-### PostgreSQL pod not scheduling
-The node label is missing:
+### PostgreSQL cluster not healthy
+Check CNPG operator logs and cluster status:
+```bash
+# Check cluster status
+kubectl get cluster -n url-shortener
+kubectl describe cluster postgres-cluster -n url-shortener
+
+# Check operator logs
+kubectl logs -n cnpg-system -l app.kubernetes.io/name=cloudnative-pg
+
+# Check individual pod logs
+kubectl logs postgres-cluster-1 -n url-shortener
+```
+
+### PostgreSQL pods not scheduling
+Node labels may be missing:
 ```bash
 kubectl get nodes --show-labels | grep role
 kubectl label node <node-name> role=db
+```
+
+### CNPG operator not installed
+```bash
+# Verify the operator is running
+kubectl get pods -n cnpg-system
+# If empty, install it:
+helm repo add cnpg https://cloudnative-pg.github.io/charts
+helm install cnpg cnpg/cloudnative-pg -n cnpg-system --create-namespace
 ```
 
 ### API pods not starting (CrashLoopBackOff)
 Check logs:
 ```bash
 kubectl logs <pod-name> -n url-shortener
-# Usually a database connection issue — verify postgres is running first
-kubectl get pods -n url-shortener | grep postgres
+# Usually a database connection issue — verify postgres cluster is healthy first
+kubectl get cluster -n url-shortener
+kubectl get pods -n url-shortener -l cnpg.io/cluster=postgres-cluster
 ```
 
 ### K3s node won't join

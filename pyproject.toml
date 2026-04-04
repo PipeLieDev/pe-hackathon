@@ -9,8 +9,11 @@ dependencies = [
     "gunicorn>=25.3.0",
     "marshmallow>=4.3.0",
     "peewee>=3.17",
+    "prometheus-flask-exporter>=0.23.2",
     "psycopg2-binary>=2.9",
     "python-dotenv>=1.0",
+    "python-json-logger>=4.1.0",
+    "structlog>=25.5.0",
 ]
 
 [dependency-groups]

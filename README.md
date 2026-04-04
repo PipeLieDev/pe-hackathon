@@ -35,28 +35,115 @@ You need to work with around the seed files that you can find in [MLH PE Hackath
 
 ## Quick Start
 
+### Option 1: Local Development (without monitoring)
+
+**Prerequisites:** PostgreSQL running locally
+
 ```bash
-# 1. Clone the repo
-git clone <repo-url> && cd mlh-pe-hackathon
+# 1. Install PostgreSQL locally (macOS with Homebrew)
+brew install postgresql
+brew services start postgresql
+createdb hackathon_db
+
+# Or use Docker for just the database:
+docker run -d --name postgres -e POSTGRES_DB=hackathon_db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:18-alpine
 
 # 2. Install dependencies
 uv sync
 
-# 3. Create the database
-createdb hackathon_db
+# 3. Configure environment
+cp .env.example .env   # DATABASE_HOST=localhost for local dev
 
-# 4. Configure environment
-cp .env.example .env   # edit if your DB credentials differ
-
-# 5. Run the server
+# 4. Run the server
 uv run run.py
 
-# 6. Verify
+# 5. Verify
 curl http://localhost:5000/health
 # → {"status":"ok"}
 ```
 
-## Project Structure
+### Option 2: Full Stack with Monitoring
+
+```bash
+# Start all services including monitoring
+docker-compose up -d
+
+# The app will be available at http://localhost:5001
+# Monitoring stack:
+# - Prometheus: http://localhost:9090
+# - Grafana: http://localhost:3000 (admin/admin)
+# - Alertmanager: http://localhost:9093
+# - Loki (logs): http://localhost:3100
+# - Database: localhost:5433 (external), db:5432 (internal)
+```
+
+## Monitoring & Observability
+
+This project includes comprehensive monitoring with Prometheus, Grafana, and Alertmanager for incident response.
+
+**Requires Docker** - Start with `docker-compose up -d`
+
+### Starting the Monitoring Stack
+
+```bash
+# Start all services including monitoring
+docker-compose up -d
+
+# Or start just the app for development
+uv run run.py
+```
+
+### Accessing Services
+
+- **Flask App**: http://localhost:5001
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Alertmanager**: http://localhost:9093
+- **Loki**: http://localhost:3100
+
+### Metrics Endpoints
+
+- **App Metrics**: http://localhost:5001/metrics (Prometheus format)
+- **Health Check**: http://localhost:5001/health
+
+### Viewing Logs
+
+For manual log inspection, use Docker logs:
+
+```bash
+# View app logs
+docker logs pe-hackathon-app-1
+
+# Follow logs in real-time
+docker logs -f pe-hackathon-app-1
+
+# View logs with timestamps
+docker logs --timestamps pe-hackathon-app-1
+```
+
+Logs are output in structured JSON format for easy parsing and monitoring.
+
+### Grafana Setup
+
+1. Open http://localhost:3000
+2. Login with admin/admin
+3. Add Prometheus data source: URL = `http://prometheus:9090`
+4. Add PostgreSQL data source with your DB credentials
+5. Add Loki data source: URL = `http://loki:3100`
+6. Import or create dashboards for your metrics and logs
+
+### Log Aggregation with Loki
+
+Your application logs are automatically collected by Promtail and stored in Loki. In Grafana, you can:
+
+- **Query logs**: Use Loki queries like `{job="flask_app"}` to search logs
+- **Correlate logs with metrics**: View logs and metrics side-by-side in dashboards
+- **Set up log-based alerts**: Create alerts based on log patterns
+
+Example Loki queries:
+- `{job="flask_app"}` - All Flask app logs
+- `{job="flask_app", level="ERROR"}` - Error logs only
+- `{job="flask_app"} |~ "connection failed"` - Logs containing specific text
 
 ```
 mlh-pe-hackathon/

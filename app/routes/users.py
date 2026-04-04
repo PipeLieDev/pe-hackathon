@@ -8,6 +8,7 @@ from flask_smorest import Blueprint, abort
 from peewee import IntegrityError
 from playhouse.shortcuts import chunked
 
+from app import USER_REGISTERED
 from app.database import db
 from app.models.user import User
 from app.schemas import (
@@ -92,6 +93,7 @@ class UserList(MethodView):
                 email=email,
                 created_at=datetime.now(),
             )
+            USER_REGISTERED.inc()  # Increment metric
         except IntegrityError:
             abort(409, message="Email already exists")
 

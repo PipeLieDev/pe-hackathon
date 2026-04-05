@@ -88,7 +88,7 @@ class URLShortenerUser(HttpUser):
 
     # ── Tasks ─────────────────────────────────────────────────────────────────
 
-    @task(10)
+    @task(1)
     def health_check(self):
         self.client.get("/health", name="/health")
 

@@ -1,8 +1,23 @@
 # MLH PE Hackathon: URL Shortener API
 
-> A production-grade URL shortener with user management, analytics, caching, and a full observability stack.
+A resilient URL shortener service built for production.
 
-**Stack:** Flask, Peewee ORM, PostgreSQL, Valkey, Prometheus, Grafana, nginx
+**Tech Stack:** ![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white) ![Peewee ORM](https://img.shields.io/badge/Peewee_ORM-3776AB?style=for-the-badge&logo=python&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![Valkey](https://img.shields.io/badge/Valkey-DC382D?style=for-the-badge&logo=redis&logoColor=white) ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white) ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white) ![nginx](https://img.shields.io/badge/nginx-009639?style=for-the-badge&logo=nginx&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![uv](https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white)
+
+## Index
+
+- [Prerequisites](#prerequisites)
+- [Configuration](#configuration)
+- [Quick Start](#quick-start)
+- [API Endpoints](#api-endpoints)
+- [Project Structure](#project-structure)
+- [Running Tests](#running-tests)
+- [Load Testing](#load-testing)
+- [Monitoring & Observability](#monitoring--observability)
+- [Deployment](#deployment)
+- [AI Usage](AI_USAGE.md)
+- [Architecture](/docs/ARCHITECTURE.md)
+- [License](#license)
 
 ## Prerequisites
 
@@ -62,38 +77,38 @@ cp .env.example .env
 
 Runs only PostgreSQL + Valkey via Docker. You run the Flask app yourself with `uv`.
 
-1. Start dev dependencies
+**1. Start dev dependencies**
 
 ```bash
 docker compose -f compose.dev.yml up -d
 ```
 
-2. Install dependencies
+**2. Install dependencies**
 
 ```bash
 uv sync
 ```
 
-3. Configure environment
+**3. Configure environment**
 
 ```bash
 cp .env.example .env
 ```
 
-4. Run the server
+**4. Run the server**
 
 ```bash
 uv run run.py
 ```
 
-5. Verify
+**5. Verify**
 
 ```bash
 curl http://localhost:5000/health
 # → {"status":"ok"}
 ```
 
-6. Stop when done
+**6. Stop when done**
 
 ```bash
 docker compose -f compose.dev.yml down
@@ -103,20 +118,20 @@ docker compose -f compose.dev.yml down
 
 Everything containerized: app, nginx, Prometheus, Grafana, Loki, and Alertmanager.
 
-1. Start all services
+**1. Start all services**
 
 ```bash
 docker compose up --build -d
 ```
 
-2. Verify
+**2. Verify**
 
 ```bash
 curl http://localhost/health
 # → {"status":"ok"}
 ```
 
-3. Stop when done
+**3. Stop when done**
 
 ```bash
 docker compose down
@@ -144,16 +159,13 @@ Full interactive docs available at `/apidocs/` via Swagger UI.
 ## Project Structure
 
 ```
-pe-hackathon/
+mlh-pe-hackathon/
 ├── app/
 │   ├── __init__.py          # App factory, Prometheus metrics
 │   ├── database.py          # DatabaseProxy, BaseModel, connection hooks
 │   ├── cache.py             # Valkey/Redis caching layer
 │   ├── logging.py           # Structured JSON logging
-│   ├── schemas.py           # Marshmallow schemas for request/response validation
-│   ├── utils.py             # Utility functions
 │   ├── models/
-│   │   ├── __init__.        # Model imports for Peewee registration
 │   │   ├── user.py
 │   │   ├── url.py
 │   │   └── event.py
@@ -165,52 +177,47 @@ pe-hackathon/
 ├── tests/                   # Unit & integration tests
 ├── monitoring/              # Prometheus, Grafana, Alertmanager configs
 ├── k8s/                     # Kubernetes manifests
-├── scripts/                 # Deployment & seeding scripts
-├── docs/                    # Documentation
 ├── compose.yml              # Full stack (app + monitoring)
 ├── compose.dev.yml          # Dev only (DB + Valkey)
-├── Dockerfile               # App container definition
-├── pyproject.toml           # Project dependencies
-├── run.py                   # Application entry point
 ├── locustfile.py            # Load testing
-└── RUNBOOK.md               # Operations runbook
+└── scripts/seed.py          # Seed data script
 ```
 
 ## Running Tests
 
-> Make sure dev dependencies are running before starting. If not, run `docker compose -f compose.dev.yml up -d` first.
+Make sure dev dependencies are running before starting. If not, run `docker compose -f compose.dev.yml up -d` first.
 
-1. Create test database (first time only)
+**1. Create test database (first time only)**
 
 ```bash
 docker exec pe-hackathon-db-1 psql -U postgres -c "CREATE DATABASE hackathon_test_db;"
 ```
 
-2. Run all tests
+**2. Run all tests**
 
 ```bash
 uv run pytest
 ```
 
-3. Run with coverage (70% minimum required)
+**3. Run with coverage (70% minimum required)**
 
 ```bash
 uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=70
 ```
 
-4. Unit tests only (no DB needed)
+**4. Unit tests only (no DB needed)**
 
 ```bash
 uv run pytest tests/unit
 ```
 
-5. Integration tests only
+**5. Integration tests only**
 
 ```bash
 uv run pytest tests/integration
 ```
 
-6. Run a specific test
+**6. Run a specific test**
 
 ```bash
 uv run pytest tests/integration/test_users.py::test_name -v
@@ -224,7 +231,7 @@ uv run locust -f locustfile.py --headless -u 50 -r 10 --run-time 60s --host http
 
 ## Monitoring & Observability
 
-> Available when running the full stack via `docker compose up --build`.
+Available when running the full stack via `docker compose up --build`.
 
 | Service | URL | Notes |
 |---|---|---|
@@ -297,10 +304,6 @@ kubectl get pods -n url-shortener
 kubectl rollout undo deployment/url-shortener -n url-shortener
 kubectl rollout status deployment/url-shortener -n url-shortener
 ```
-
-## AI Usage
-
-See [AI_USAGE.md](AI_USAGE.md) for detailed documentation on AI tools and how they were used in this project.
 
 ## License
 

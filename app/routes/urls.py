@@ -6,7 +6,7 @@ from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from peewee import IntegrityError
 
-from app import EVENT_RECORDED, URL_CREATED
+from app import EVENT_RECORDED, URL_CREATED, REDIRECT_TOTAL, REDIRECT_NOT_FOUND, SHORT_CODE_COLLISIONS
 from app.cache import cache_delete, cache_delete_pattern, cache_get, cache_set
 from app.database import db
 from app.models.event import Event
@@ -84,9 +84,10 @@ class UrlList(MethodView):
                     timestamp=now,
                     details=json.dumps({"short_code": short_code, "original_url": original_url}),
                 )
-                EVENT_RECORDED.inc()
+                EVENT_RECORDED.labels(event_type="created").inc()
                 return serialize_model(url)
             except IntegrityError:
+                SHORT_CODE_COLLISIONS.inc()
                 continue
 
         abort(500, message="Failed to generate unique short code")
@@ -142,7 +143,7 @@ class UrlDetail(MethodView):
                 timestamp=now,
                 details=json.dumps({"field": field, "new_value": new_value}),
             )
-            EVENT_RECORDED.inc()
+            EVENT_RECORDED.labels(event_type="updated").inc()
 
         cache_delete(f"urls:{url_id}")
         cache_delete_pattern("urls:list:*")
@@ -170,7 +171,10 @@ class UrlRedirect(MethodView):
         """Redirect to the original URL by short code"""
         url = Url.get_or_none(Url.short_code == short_code)
         if not url:
+            REDIRECT_NOT_FOUND.inc()
             abort(404, message="URL not found")
         if not url.is_active:
+            REDIRECT_NOT_FOUND.inc()
             abort(404, message="URL is not active")
+        REDIRECT_TOTAL.inc()
         return redirect(url.original_url, code=302)

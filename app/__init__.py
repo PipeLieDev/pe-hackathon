@@ -11,9 +11,14 @@ from app.routes import register_routes
 # Global metrics
 URL_CREATED = Counter('url_shortener_urls_created_total', 'Total URLs created')
 USER_REGISTERED = Counter('url_shortener_users_registered_total', 'Total users registered')
-EVENT_RECORDED = Counter('url_shortener_events_recorded_total', 'Total events recorded')
+EVENT_RECORDED = Counter('url_shortener_events_recorded_total', 'Total events recorded', ['event_type'])
 TOTAL_USERS = Gauge('url_shortener_total_users', 'Current total users')
 TOTAL_URLS = Gauge('url_shortener_total_urls', 'Current total URLs')
+ACTIVE_URLS = Gauge('url_shortener_active_urls', 'Currently active URLs')
+INACTIVE_URLS = Gauge('url_shortener_inactive_urls', 'Currently inactive URLs')
+REDIRECT_TOTAL = Counter('url_shortener_redirects_total', 'Total URL redirects')
+REDIRECT_NOT_FOUND = Counter('url_shortener_redirect_not_found_total', 'Redirects to missing or inactive short codes')
+SHORT_CODE_COLLISIONS = Counter('url_shortener_short_code_collisions_total', 'Short code generation collisions')
 
 
 def create_app():
@@ -65,6 +70,8 @@ def create_app():
         try:
             TOTAL_USERS.set(User.select().count())
             TOTAL_URLS.set(Url.select().count())
+            ACTIVE_URLS.set(Url.select().where(Url.is_active == True).count())
+            INACTIVE_URLS.set(Url.select().where(Url.is_active == False).count())
             app.logger.info("Health check requested", extra={"endpoint": "/health", "user_agent": request.headers.get('User-Agent', 'unknown')})
         except Exception as e:
             app.logger.error("Failed to update metrics: %s", str(e), extra={"error": str(e)})

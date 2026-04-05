@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from flask import redirect, request
@@ -5,9 +6,10 @@ from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from peewee import IntegrityError
 
-from app import URL_CREATED
+from app import EVENT_RECORDED, URL_CREATED
 from app.cache import cache_delete, cache_delete_pattern, cache_get, cache_set
 from app.database import db
+from app.models.event import Event
 from app.models.url import Url
 from app.models.user import User
 from app.schemas import ErrorSchema, UrlSchema, UrlUpdateSchema
@@ -75,6 +77,14 @@ class UrlList(MethodView):
                         updated_at=now,
                     )
                 URL_CREATED.inc()  # Increment metric
+                Event.create(
+                    url_id=url.id,
+                    user_id=user_id,
+                    event_type="created",
+                    timestamp=now,
+                    details=json.dumps({"short_code": short_code, "original_url": original_url}),
+                )
+                EVENT_RECORDED.inc()
                 return serialize_model(url)
             except IntegrityError:
                 continue
@@ -109,15 +119,30 @@ class UrlDetail(MethodView):
         if not url:
             abort(404, message="URL not found")
 
+        now = datetime.now()
+        changed_fields = {}
         if "title" in url_data:
             url.title = url_data["title"]
+            changed_fields["title"] = str(url_data["title"])
         if "is_active" in url_data:
             url.is_active = url_data["is_active"]
+            changed_fields["is_active"] = str(url_data["is_active"])
         if "original_url" in url_data:
             url.original_url = url_data["original_url"]
+            changed_fields["original_url"] = str(url_data["original_url"])
 
-        url.updated_at = datetime.now()
+        url.updated_at = now
         url.save()
+
+        for field, new_value in changed_fields.items():
+            Event.create(
+                url_id=url_id,
+                user_id=url.user_id,
+                event_type="updated",
+                timestamp=now,
+                details=json.dumps({"field": field, "new_value": new_value}),
+            )
+            EVENT_RECORDED.inc()
 
         cache_delete(f"urls:{url_id}")
         cache_delete_pattern("urls:list:*")
@@ -131,6 +156,7 @@ class UrlDetail(MethodView):
         if not url:
             abort(404, message="URL not found")
 
+        Event.delete().where(Event.url_id == url.id).execute()
         url.delete_instance()
         cache_delete(f"urls:{url_id}")
         cache_delete_pattern("urls:list:*")

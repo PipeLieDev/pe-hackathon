@@ -1,6 +1,6 @@
 # Decision Log
 
-## Why Redis/Valkey for Caching?
+## Why Valkey for Caching?
 
 **Decision:** Use Valkey (Redis-compatible) for caching layer.
 
@@ -8,6 +8,9 @@
 - No caching (query DB directly)
 - Memcached
 - PostgreSQL native caching (pg_caching)
+- Redis (original)
+- KeyDB (Redis fork with multi-threading)
+- DragonflyDB (modern, higher performance)
 
 **Reasons:**
 1. **Performance**: In-memory caching is 10-100x faster than DB queries
@@ -15,64 +18,20 @@
 3. **Industry Standard**: Well-understood, well-documented patterns
 4. **Already Available**: Included in docker-compose stack (valkey service)
 5. **Graceful Fallback**: Cache module handles missing Redis (no errors, just slower)
+6. **Open Source Governance**: Redis moved to RSPLv2 license (SSPL) in 2024 - Valkey is fully open source (BSD)
+7. **Future-Proof**: Avoid potential vendor lock-in from Redis Ltd.
+8. **API Compatibility**: 100% Redis-compatible - drop-in replacement
+9. **Active Development**: Backed by cloud providers, Linux Foundation
+10. **No Code Changes**: Existing Redis clients work without modification
+11. **Lower Cloud Cost**: No license fees - cheaper to run in cloud environments
 
 **Trade-offs:**
-- Additional infrastructure (need to maintain Redis)
+- Additional infrastructure (need to maintain Valkey)
 - Cache invalidation complexity
 - Memory usage
-
----
-
-## Why Flask + Peewee instead of Django/FastAPI?
-
-**Decision:** Use Flask with Peewee ORM.
-
-**Alternatives Considered:**
-- Django (full-featured, heavier)
-- FastAPI + SQLAlchemy (async, newer)
-- Express.js + TypeScript (different stack)
-- Go/Gin (different stack)
-
-**Reasons:**
-1. **Hackathon Simplicity**: Less boilerplate, faster to get started
-2. **Peewee**: Lightweight, Pythonic ORM - good fit for simple CRUD
-3. **flask-smorest**: Built-in OpenAPI/Swagger docs (auto-generated API docs!)
-4. **Familiarity**: Team already comfortable with Flask
-5. **Small Scope**: URL shortener doesn't need Django's features
-
-**Trade-offs:**
-- Less built-in functionality (auth, admin, etc.)
-- Peewee less feature-rich than SQLAlchemy/Django ORM
-- No async (mitigated by caching layer)
-
----
-
-docker compose cannot scale like k8s
-
----
-
-## Why Valkey over Redis?
-
-**Decision:** Use Valkey (Redis fork) instead of Redis.
-
-**Alternatives Considered:**
-- Redis (original)
-- KeyDB (Redis fork with multi-threading)
-- DragonflyDB (modern, higher performance)
-
-**Reasons:**
-1. **Open Source Governance**: Redis moved to RSPLv2 license (SSPL) in 2024 - Valkey is fully open source (BSD)
-2. **Future-Proof**: Avoid potential vendor lock-in from Redis Ltd.
-3. **API Compatibility**: 100% Redis-compatible - drop-in replacement
-4. **Active Development**: Backed by cloud providers, Linux Foundation
-5. **No Code Changes**: Existing Redis clients work without modification
-
-**Trade-offs:**
 - Smaller community than Redis (but growing)
 - Fewer third-party integrations
 - Newer project (less battle-tested)
-
----
 
 ## Why Kubernetes over Docker Compose?
 

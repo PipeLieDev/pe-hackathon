@@ -4,7 +4,7 @@ datasources:
     type: prometheus
     access: proxy
     url: http://prometheus-svc.monitoring.svc.cluster.local:9090
-    isDefault: true
+    isDefault: false
     uid: PBFA97CFB590B2093
   - name: Loki
     type: loki

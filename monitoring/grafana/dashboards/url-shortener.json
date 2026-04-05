@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "URL Shortener API monitoring",
+  "description": "Golden Signals: Latency, Traffic, Errors, Saturation",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -20,6 +20,7 @@
   "panels": [
     {
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Total requests in the last 5 minutes.",
       "fieldConfig": {
         "defaults": {
           "color": { "fixedColor": "blue", "mode": "fixed" },
@@ -28,16 +29,16 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 0 },
       "id": 1,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "area",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "showPercentChange": false,
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true
       },
       "targets": [
@@ -49,11 +50,12 @@
           "refId": "A"
         }
       ],
-      "title": "Requests (5m)",
+      "title": "Traffic (5m)",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Warning at 5% (alert fires). Critical at 25%.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -63,7 +65,7 @@
             "steps": [
               { "color": "green", "value": null },
               { "color": "yellow", "value": 5 },
-              { "color": "red", "value": 20 }
+              { "color": "red", "value": 25 }
             ]
           },
           "unit": "percent",
@@ -72,73 +74,33 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 0 },
       "id": 2,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "showPercentChange": false,
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true
       },
       "targets": [
         {
           "editorMode": "code",
           "expr": "(sum(increase(flask_http_request_total{job=\"flask_app\",status!~\"2..\"}[5m])) / sum(increase(flask_http_request_total{job=\"flask_app\"}[5m]))) * 100 OR vector(0)",
-          "legendFormat": "Error %",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Error Rate",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 5 },
-              { "color": "red", "value": 20 }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 4, "x": 6, "y": 0 },
-      "id": 10,
-      "options": {
-        "colorMode": "background_solid",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "round(sum(increase(flask_http_request_total{job=\"flask_app\",status!~\"2..\"}[5m]))) OR vector(0)",
           "legendFormat": "",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Total Errors (5m)",
+      "title": "Errors",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Warning at 2s (alert fires).",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -147,24 +109,24 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.5 },
-              { "color": "red", "value": 1 }
+              { "color": "yellow", "value": 2 },
+              { "color": "red", "value": 3 }
             ]
           },
           "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 3, "x": 10, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 0 },
       "id": 3,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "showPercentChange": false,
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true
       },
       "targets": [
@@ -176,79 +138,12 @@
           "refId": "A"
         }
       ],
-      "title": "p95 Latency",
+      "title": "Latency (p95)",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "semi-dark-orange", "mode": "fixed" },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "semi-dark-orange", "value": null }] }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 4, "x": 13, "y": 0 },
-      "id": 4,
-      "options": {
-        "colorMode": "background_solid",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "sum(url_shortener_total_urls)",
-          "legendFormat": "",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Total URLs",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "semi-dark-green", "mode": "fixed" },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "semi-dark-green", "value": null }] }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 3, "x": 17, "y": 0 },
-      "id": 5,
-      "options": {
-        "colorMode": "background_solid",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "sum(url_shortener_total_users)",
-          "legendFormat": "",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Total Users",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Warning at 80% (app alert). Critical at 90% (node alert).",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -257,24 +152,24 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.5 },
-              { "color": "red", "value": 0.8 }
+              { "color": "yellow", "value": 0.8 },
+              { "color": "red", "value": 0.9 }
             ]
           },
           "unit": "percentunit"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
-      "id": 6,
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 0 },
+      "id": 4,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "showPercentChange": false,
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true
       },
       "targets": [
@@ -286,11 +181,92 @@
           "refId": "A"
         }
       ],
-      "title": "CPU",
+      "title": "Saturation (CPU)",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Cache hit ratio — higher is better.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 80 }
+            ]
+          },
+          "unit": "percent",
+          "max": 100,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 0 },
+      "id": 10,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(increase(url_shortener_cache_hits_total[5m])) / (sum(increase(url_shortener_cache_hits_total[5m])) + sum(increase(url_shortener_cache_misses_total[5m]))) * 100 OR vector(0)",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Cache Hit %",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Total URL redirects in the last 5 minutes.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "semi-dark-purple", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "semi-dark-purple", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 0 },
+      "id": 11,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "round(sum(increase(url_shortener_redirects_total[5m])))",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Redirects (5m)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Request rate by HTTP method and status code.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -298,12 +274,12 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "req/s",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 5,
+            "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": { "legend": false, "tooltip": false, "viz": false },
             "insertNulls": false,
@@ -322,8 +298,8 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
-      "id": 7,
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 5 },
+      "id": 5,
       "options": {
         "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
         "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" }
@@ -337,11 +313,12 @@
           "refId": "A"
         }
       ],
-      "title": "Request Rate by Endpoint",
+      "title": "Traffic — Request Rate",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "description": "Yellow line = 2s alert threshold.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -354,8 +331,8 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 15,
-            "gradientMode": "scheme",
+            "fillOpacity": 10,
+            "gradientMode": "none",
             "hideFrom": { "legend": false, "tooltip": false, "viz": false },
             "insertNulls": false,
             "lineInterpolation": "smooth",
@@ -366,10 +343,16 @@
             "showValues": false,
             "spanNulls": false,
             "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "thresholdsStyle": { "mode": "dashed" }
           },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "transparent", "value": null },
+              { "color": "yellow", "value": 2 }
+            ]
+          },
           "unit": "s"
         },
         "overrides": [
@@ -379,7 +362,7 @@
           },
           {
             "matcher": { "id": "byRegexp", "options": "p95.*" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
           },
           {
             "matcher": { "id": "byRegexp", "options": "p99.*" },
@@ -387,8 +370,8 @@
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
-      "id": 8,
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 5 },
+      "id": 6,
       "options": {
         "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
         "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" }
@@ -416,14 +399,14 @@
           "refId": "C"
         }
       ],
-      "title": "Response Time (p50 / p95 / p99)",
+      "title": "Latency — Response Time",
       "type": "timeseries"
     },
     {
       "datasource": { "uid": "P8E80F9AEF21F6940" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
-      "id": 9,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+      "id": 7,
       "options": {
         "dedupStrategy": "none",
         "enableInfiniteScrolling": true,
@@ -450,13 +433,13 @@
   "preload": false,
   "refresh": "10s",
   "schemaVersion": 42,
-  "tags": ["url-shortener", "flask"],
+  "tags": ["url-shortener", "golden-signals"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "URL Shortener - Monitoring",
+  "title": "URL Shortener - Golden Signals",
   "uid": "ad5n6z9",
-  "version": 20,
+  "version": 23,
   "weekStart": ""
 }

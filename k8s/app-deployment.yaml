@@ -48,18 +48,20 @@ spec:
               port: 5000
             initialDelaySeconds: 30
             periodSeconds: 10
-            failureThreshold: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 5
-            failureThreshold: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
-              memory: 256Mi
-              cpu: 100m
-            limits:
               memory: 512Mi
-              cpu: 500m
+              cpu: 1000m
+            limits:
+              memory: 2Gi
+              cpu: 2000m

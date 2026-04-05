@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - "scripts/generate_docs.py"
+      - "loadtest_report/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -32,9 +33,16 @@ jobs:
       - name: Generate API docs
         run: uv run python scripts/generate_docs.py
 
+      - name: Prepare pages site
+        run: |
+          mkdir -p _site
+          cp -r docs/api/* _site/
+          mkdir -p _site/loadtest
+          cp loadtest_report/*.html _site/loadtest/
+
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: docs/api
+          path: _site
 
   deploy:
     needs: build

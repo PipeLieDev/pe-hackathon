@@ -4,7 +4,7 @@ set -euo pipefail
 NAMESPACE="url-shortener"
 MONITORING_NS="monitoring"
 IMAGE_TAG="${1:-latest}"
-REPO="ghcr.io/cyanghxst/pe-hackathon"
+REPO="ghcr.io/pipeliedev/pe-hackathon"
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "=== Deploying URL Shortener to K3s ==="

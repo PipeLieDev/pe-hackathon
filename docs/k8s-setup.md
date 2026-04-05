@@ -267,7 +267,7 @@ tar xzf actions-runner-linux-x64.tar.gz
 3. Run on Node .110:
 
 ```bash
-./config.sh --url https://github.com/cyanghxst/pe-hackathon \
+./config.sh --url https://github.com/pipeliedev/pe-hackathon \
   --token <TOKEN-FROM-GITHUB>
 ```
 

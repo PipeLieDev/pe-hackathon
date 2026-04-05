@@ -4,8 +4,6 @@
 
 **Stack:** Flask, Peewee ORM, PostgreSQL, Valkey, Prometheus, Grafana, nginx
 
-**AI Assistance:** Claude Code (Opus 4.6, Sonnet 4.6), OpenCode (Web, CLI) with MiniMax M2.5
-
 ## Prerequisites
 
 ### 1. uv

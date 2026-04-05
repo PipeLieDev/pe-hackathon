@@ -9,20 +9,20 @@
 
 ## **🥉 Bronze: The Map**
 
-- [ ] **README:** Setup instructions so clear a freshman could run your app.  
+- [x] **README:** Setup instructions so clear a freshman could run your app.  
 - [ ] **Diagram:** Draw the architecture. Boxes and arrows showing App→ DB.  
-- [ ] **API Docs:** List your endpoints (GET/POST) and what they do.
+- [x] **API Docs:** List your endpoints (GET/POST) and what they do.
 
 ## **🥈 Silver: The Manual**
 
 - [ ] **Deploy Guide:** How do we get this live? How do we rollback?  
 - [ ] **Troubleshooting:** "If X happens, try Y." Record the bugs you hit today and how you fixed them.  
-- [ ] **Config:** List all Environment Variables (DATABASE\_URL, API\_KEY) needed to run.
+- [x] **Config:** List all Environment Variables (DATABASE\_URL, API\_KEY) needed to run.
 
 ## **🥇 Gold: The Codex**
 
-- [ ] **Runbooks:** Step-by-step guides for specific alerts (Required for Incident Response Gold).  
-- [ ] **Decision Log:** Why did you choose Redis? Why Nginx? Document your technical choices.  
+- [x] **Runbooks:** Step-by-step guides for specific alerts (Required for Incident Response Gold).  
+- [x] **Decision Log:** Why did you choose Redis? Why Nginx? Document your technical choices.  
 - [ ] **Capacity Plan:** How many users *can* we handle? Where is the limit?
 
 ### **💡 Pro Tip**

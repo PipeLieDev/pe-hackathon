@@ -13,9 +13,9 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **Structured Logging:** Configure JSON logs. Include timestamps and log levels (INFO, WARN, ERROR).  
-- [ ] **Metrics:** Expose a /metrics endpoint (or similar) showing CPU/RAM usage.  
-- [ ] **Manual Check:** Have a way to view logs without SSH-ing into the server.
+- [x] **Structured Logging:** Configure JSON logs. Include timestamps and log levels (INFO, WARN, ERROR).  
+- [x] **Metrics:** Expose a /metrics endpoint (or similar) showing CPU/RAM usage.  
+- [x] **Manual Check:** Have a way to view logs without SSH-ing into the server.
 
 ### **💡 Intel**
 
@@ -25,7 +25,7 @@
 ### **✅ Verification (Loot)**
 
 - [ ] Screenshot of clean JSON logs.  
-- [ ] Screenshot of a /metrics page with data.
+- [x] Screenshot of a /metrics page with data.
 
 ---
 
@@ -35,9 +35,9 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **Set Traps:** Configure alerts for "Service Down" and "High Error Rate."  
-- [ ] **Fire Drill:** Connect alerts to a channel (Slack, Discord, Email).  
-- [ ] **Speed:** Trigger must fire within 5 minutes of the failure.
+- [x] **Set Traps:** Configure alerts for "Service Down" and "High Error Rate."  
+- [x] **Fire Drill:** Connect alerts to a channel (Slack, Discord, Email).  
+- [x] **Speed:** Trigger must fire within 5 minutes of the failure.
 
 ### **💡 Intel**
 
@@ -46,8 +46,8 @@
 
 ### **✅ Verification (Loot)**
 
-- [ ] **Live Demo:** Break the app→ Phone/Laptop goes "Bing\!" with a notification.  
-- [ ] Show the configuration (YAML/Code) for the alert logic.
+- [x] **Live Demo:** Break the app→ Phone/Laptop goes "Bing\!" with a notification.  
+- [x] Show the configuration (YAML/Code) for the alert logic.
 
 ---
 
@@ -57,8 +57,8 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **The Dashboard:** Build a visual board (Grafana/Datadog) tracking 4+ metrics (Latency, Traffic, Errors, Saturation).  
-- [ ] **The Runbook:** Write a "In Case of Emergency" guide. What do we do when the alert fires?  
+- [x] **The Dashboard:** Build a visual board (Grafana/Datadog) tracking 4+ metrics (Latency, Traffic, Errors, Saturation).  
+- [x] **The Runbook:** Write a "In Case of Emergency" guide. What do we do when the alert fires?  
 - [ ] **Sherlock Mode:** Diagnose a fake issue using *only* your dashboard and logs.
 
 ### **💡 Intel**
@@ -68,8 +68,8 @@
 
 ### **✅ Verification (Loot)**
 
-- [ ] Screenshot of a beautiful, data-filled Dashboard.  
-- [ ] Link to the Runbook.  
+- [x] Screenshot of a beautiful, data-filled Dashboard.  
+- [x] Link to the Runbook.  
 - [ ] Explanation of how you found a root cause using the dashboard.
 
 ---

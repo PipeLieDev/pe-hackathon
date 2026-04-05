@@ -13,9 +13,9 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **Load Test:** Install k6 or Locust.  
-- [ ] **The Crowd:** Simulate **50 concurrent users** hitting your service.  
-- [ ] **Record Stats:** Document your Response Time (Latency) and Error Rate.
+- [x] **Load Test:** Install k6 or Locust.  
+- [x] **The Crowd:** Simulate **50 concurrent users** hitting your service.  
+- [x] **Record Stats:** Document your Response Time (Latency) and Error Rate.
 
 ### **💡 Intel**
 
@@ -24,8 +24,8 @@
 
 ### **✅ Verification (Loot)**
 
-- [ ] Screenshot of terminal output showing 50 concurrent users.  
-- [ ] Documented baseline p95 response time.
+- [x] Screenshot of terminal output showing 50 concurrent users.  
+- [x] Documented baseline p95 response time.
 
 ---
 
@@ -35,10 +35,10 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **The Horde:** Ramp up to **200 concurrent users**.  
-- [ ] **Clone Army:** Run 2+ instances of your app (containers) using Docker Compose.  
-- [ ] **Traffic Cop:** Put a Load Balancer (Nginx) in front to split traffic between instances.  
-- [ ] **Speed Limit:** Keep response times under 3 seconds.
+- [x] **The Horde:** Ramp up to **200 concurrent users**.  
+- [x] **Clone Army:** Run 2+ instances of your app (containers) using Docker Compose.  
+- [x] **Traffic Cop:** Put a Load Balancer (Nginx) in front to split traffic between instances.  
+- [x] **Speed Limit:** Keep response times under 3 seconds.
 
 ### **💡 Intel**
 
@@ -48,7 +48,7 @@
 ### **✅ Verification (Loot)**
 
 - [ ] docker ps showing multiple app containers \+ 1 Nginx container.  
-- [ ] Load test results showing success with 200 users.
+- [x] Load test results showing success with 200 users.
 
 ---
 
@@ -58,8 +58,8 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **The Tsunami:** Handle **500+ concurrent users** (or 100 req/sec).  
-- [ ] **Cache It:** Implement Redis. Store results in memory so you don't hit the DB every time.  
+- [x] **The Tsunami:** Handle **500+ concurrent users** (or 100 req/sec).  
+- [x] **Cache It:** Implement Redis. Store results in memory so you don't hit the DB every time.  
 - [ ] **Bottleneck Analysis:** Find out what was slow before, and explain how you fixed it.  
 - [ ] **Stability:** Error rate must stay under 5% during the tsunami.
 
@@ -70,8 +70,8 @@
 
 ### **✅ Verification (Loot)**
 
-- [ ] Evidence of Caching (headers, logs, or speed comparison).  
-- [ ] Load test results: 500 users with \<5% errors.  
+- [x] Evidence of Caching (headers, logs, or speed comparison).  
+- [x] Load test results: 500 users with \<5% errors.  
 - [ ] "Bottleneck Report" (2-3 sentences on what you fixed).
 
 ---

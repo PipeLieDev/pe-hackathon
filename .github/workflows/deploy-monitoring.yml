@@ -1,0 +1,93 @@
+name: Deploy Monitoring Stack
+
+on:
+  # Auto-deploy: triggers after the app deploy succeeds on main.
+  # To switch to manual-only, comment out the 'workflow_run' block below.
+  workflow_run:
+    workflows: ["Deploy to K3s"]
+    types: [completed]
+    branches: [main]
+
+  # Manual deploy: always available via Actions → Run workflow
+  workflow_dispatch:
+
+jobs:
+  deploy-monitoring:
+    runs-on: self-hosted
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure monitoring namespace
+        run: kubectl apply -f k8s/monitoring/namespace.yaml
+
+      # ConfigMaps are generated from monitoring/ source files (single source of truth).
+      # Shared configs use the base file; k8s-specific configs use the *.k8s.yml variant.
+      - name: Create ConfigMaps from source configs
+        run: |
+          kubectl create configmap prometheus-config \
+            --from-file=prometheus.yml=monitoring/prometheus.k8s.yml \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create configmap alert-rules \
+            --from-file=alert_rules.yml=monitoring/alert_rules.yml \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create configmap alertmanager-config \
+            --from-file=config.yml=monitoring/alertmanager.yml \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create configmap loki-config \
+            --from-file=local-config.yaml=monitoring/loki.k8s.yml \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create configmap promtail-config \
+            --from-file=config.yml=monitoring/promtail.k8s.yml \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create configmap grafana-datasources \
+            --from-file=datasources.yaml=monitoring/grafana/provisioning/datasources/datasource.k8s.yml \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create configmap grafana-dashboard-provider \
+            --from-file=dashboards.yaml=monitoring/grafana/provisioning/dashboards/provider.yml \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create Grafana dashboards ConfigMap
+        run: |
+          if ls monitoring/grafana/dashboards/*.json 1>/dev/null 2>&1; then
+            kubectl create configmap grafana-dashboards \
+              --from-file=monitoring/grafana/dashboards/ \
+              -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+          else
+            echo "No dashboard JSON files found, skipping"
+          fi
+
+      - name: Deploy monitoring workloads
+        run: |
+          kubectl apply -f k8s/monitoring/prometheus-deployment.yaml
+          kubectl apply -f k8s/monitoring/alertmanager-deployment.yaml
+          kubectl apply -f k8s/monitoring/loki-deployment.yaml
+          kubectl apply -f k8s/monitoring/promtail-daemonset.yaml
+          kubectl apply -f k8s/monitoring/grafana-deployment.yaml
+
+      - name: Restart pods to pick up ConfigMap changes
+        run: |
+          kubectl rollout restart deployment/prometheus -n monitoring
+          kubectl rollout restart deployment/alertmanager -n monitoring
+          kubectl rollout restart deployment/loki -n monitoring
+          kubectl rollout restart deployment/grafana -n monitoring
+          kubectl rollout restart daemonset/promtail -n monitoring
+
+      - name: Wait for rollouts
+        run: |
+          for deploy in prometheus alertmanager loki grafana; do
+            kubectl rollout status deployment/${deploy} -n monitoring --timeout=120s || true
+          done
+          kubectl rollout status daemonset/promtail -n monitoring --timeout=120s || true
+
+      - name: Verify monitoring pods
+        run: kubectl get pods -n monitoring -o wide

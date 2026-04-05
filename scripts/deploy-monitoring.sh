@@ -11,46 +11,69 @@ echo ""
 echo "--- Creating monitoring namespace ---"
 kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/namespace.yaml"
 
-# --- Prometheus ---
-echo "--- Deploying Prometheus ---"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/prometheus-config.yaml"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/alert-rules-config.yaml"
+# --- ConfigMaps from monitoring/ source files ---
+echo "--- Creating ConfigMaps from monitoring configs ---"
+kubectl create configmap prometheus-config \
+  --from-file=prometheus.yml="${SCRIPT_DIR}/monitoring/prometheus.k8s.yml" \
+  -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create configmap alert-rules \
+  --from-file=alert_rules.yml="${SCRIPT_DIR}/monitoring/alert_rules.yml" \
+  -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create configmap alertmanager-config \
+  --from-file=config.yml="${SCRIPT_DIR}/monitoring/alertmanager.yml" \
+  -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create configmap loki-config \
+  --from-file=local-config.yaml="${SCRIPT_DIR}/monitoring/loki.k8s.yml" \
+  -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create configmap promtail-config \
+  --from-file=config.yml="${SCRIPT_DIR}/monitoring/promtail.k8s.yml" \
+  -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create configmap grafana-datasources \
+  --from-file=datasources.yaml="${SCRIPT_DIR}/monitoring/grafana/provisioning/datasources/datasource.k8s.yml" \
+  -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create configmap grafana-dashboard-provider \
+  --from-file=dashboards.yaml="${SCRIPT_DIR}/monitoring/grafana/provisioning/dashboards/provider.yml" \
+  -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
+
+# --- Apply workload manifests ---
+echo "--- Applying workload manifests ---"
 kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/prometheus-deployment.yaml"
-kubectl rollout status deployment/prometheus -n "${MONITORING_NS}" --timeout=120s
-
-# --- Alertmanager ---
-echo "--- Deploying Alertmanager ---"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/alertmanager-config.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/alertmanager-deployment.yaml"
-kubectl rollout status deployment/alertmanager -n "${MONITORING_NS}" --timeout=120s
-
-# --- Loki ---
-echo "--- Deploying Loki ---"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/loki-config.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/loki-deployment.yaml"
-kubectl rollout status deployment/loki -n "${MONITORING_NS}" --timeout=120s
-
-# --- Promtail ---
-echo "--- Deploying Promtail ---"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/promtail-config.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/promtail-daemonset.yaml"
-kubectl rollout status daemonset/promtail -n "${MONITORING_NS}" --timeout=120s
 
-# --- Grafana ---
-echo "--- Deploying Grafana ---"
-
-# Create dashboard ConfigMap from JSON file
-DASHBOARD_FILE="${SCRIPT_DIR}/docs/IncidentReportQuest/grafanaDashboard.json"
-if [ -f "${DASHBOARD_FILE}" ]; then
+# Create dashboard ConfigMap from JSON files
+DASHBOARD_DIR="${SCRIPT_DIR}/monitoring/grafana/dashboards"
+if ls "${DASHBOARD_DIR}"/*.json 1>/dev/null 2>&1; then
   kubectl create configmap grafana-dashboards \
-    --from-file=url-shortener.json="${DASHBOARD_FILE}" \
+    --from-file="${DASHBOARD_DIR}/" \
     -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
 else
-  echo "WARN: ${DASHBOARD_FILE} not found — skipping dashboard ConfigMap"
+  echo "WARN: No dashboard JSON files found in ${DASHBOARD_DIR} — skipping dashboard ConfigMap"
 fi
 
 kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/grafana-deployment.yaml"
-kubectl rollout status deployment/grafana -n "${MONITORING_NS}" --timeout=120s
+
+# --- Restart pods to pick up ConfigMap changes ---
+echo "--- Restarting deployments to pick up config changes ---"
+kubectl rollout restart deployment/prometheus -n "${MONITORING_NS}"
+kubectl rollout restart deployment/alertmanager -n "${MONITORING_NS}"
+kubectl rollout restart deployment/loki -n "${MONITORING_NS}"
+kubectl rollout restart deployment/grafana -n "${MONITORING_NS}"
+kubectl rollout restart daemonset/promtail -n "${MONITORING_NS}"
+
+# --- Wait for rollouts ---
+echo "--- Waiting for rollouts ---"
+for deploy in prometheus alertmanager loki grafana; do
+  kubectl rollout status deployment/${deploy} -n "${MONITORING_NS}" --timeout=120s
+done
+kubectl rollout status daemonset/promtail -n "${MONITORING_NS}" --timeout=120s
 
 # --- Status ---
 echo ""

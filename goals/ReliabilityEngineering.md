@@ -15,9 +15,9 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **Write Unit Tests:** Create a test suite using pytest. Test individual functions in isolation.  
-- [ ] **Automate Defense:** Set up GitHub Actions (or similar CI) to run tests on every commit.  
-- [ ] **Pulse Check:** Create a /health endpoint that returns 200 OK.
+- [x] **Write Unit Tests:** Create a test suite using pytest. Test individual functions in isolation.  
+- [x] **Automate Defense:** Set up GitHub Actions (or similar CI) to run tests on every commit.  
+- [x] **Pulse Check:** Create a /health endpoint that returns 200 OK.
 
 ### **💡 Intel**
 
@@ -26,8 +26,8 @@
 
 ### **✅ Verification (Loot)**
 
-- [ ] CI Logs showing green/passing tests.  
-- [ ] A working GET /health endpoint.
+- [x] CI Logs showing green/passing tests.  
+- [x] A working GET /health endpoint.
 
 ---
 
@@ -37,10 +37,10 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **50% Coverage:** Use pytest-cov. Ensure half your code lines are hit by tests.  
-- [ ] **Integration Testing:** Write tests that hit the API (e.g., POST to /shorten  → Check DB).  
-- [ ] **The Gatekeeper:** Configure CI so deployment **fails** if tests fail.  
-- [ ] **Error Handling:** Document how your app handles 404s and 500s.
+- [x] **50% Coverage:** Use pytest-cov. Ensure half your code lines are hit by tests.  
+- [x] **Integration Testing:** Write tests that hit the API (e.g., POST to /shorten  → Check DB).  
+- [x] **The Gatekeeper:** Configure CI so deployment **fails** if tests fail.  
+- [x] **Error Handling:** Document how your app handles 404s and 500s.
 
 ### **💡 Intel**
 
@@ -49,7 +49,7 @@
 
 ### **✅ Verification (Loot)**
 
-- [ ] Coverage report showing \>50%.  
+- [x] Coverage report showing \>50%.  
 - [ ] A screenshot of a blocked deploy due to a failed test.
 
 ---
@@ -60,10 +60,10 @@
 
 ### **⚔️ Main Objectives**
 
-- [ ] **70% Coverage:** High confidence in code stability.  
-- [ ] **Graceful Failure:** Send bad inputs. The app must return clean errors (JSON), not crash.  
+- [x] **70% Coverage:** High confidence in code stability.  
+- [x] **Graceful Failure:** Send bad inputs. The app must return clean errors (JSON), not crash.  
 - [ ] **Chaos Mode:** Kill the app process or container while it's running. Show it restarts automatically (e.g., Docker restart policy).  
-- [ ] **Failure Manual:** Document exactly what happens when things break (Failure Modes).
+- [x] **Failure Manual:** Document exactly what happens when things break (Failure Modes).
 
 ### **💡 Intel**
 
@@ -73,8 +73,8 @@
 ### **✅ Verification (Loot)**
 
 - [ ] Live Demo: Kill the container→Watch it resurrect.  
-- [ ] Live Demo: Send garbage data→Get a polite error.  
-- [ ] Link to "Failure Mode" documentation.
+- [x] Live Demo: Send garbage data→Get a polite error.  
+- [x] Link to "Failure Mode" documentation.
 
 ---
 

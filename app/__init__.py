@@ -60,14 +60,25 @@ def create_app():
 
     @app.route("/health")
     def health():
+        """Liveness probe — is the process alive? No dependency checks."""
+        return jsonify(status="ok")
+
+    @app.route("/ready")
+    def ready():
+        """Readiness probe — can this pod serve traffic? Checks DB and cache."""
         from flask import request
-        # Update gauges with current counts
+        try:
+            db.execute_sql("SELECT 1")
+        except Exception as e:
+            app.logger.error("Readiness check failed: DB unreachable", extra={"error": str(e)})
+            return jsonify(status="error", reason="database unreachable"), 503
+
+        # Update gauges while we're checking
         try:
             TOTAL_USERS.set(User.select().count())
             TOTAL_URLS.set(Url.select().count())
-            app.logger.info("Health check requested", extra={"endpoint": "/health", "user_agent": request.headers.get('User-Agent', 'unknown')})
-        except Exception as e:
-            app.logger.error("Failed to update metrics: %s", str(e), extra={"error": str(e)})
+        except Exception:
+            pass  # Non-critical — don't fail readiness over metrics
 
         return jsonify(status="ok")
 

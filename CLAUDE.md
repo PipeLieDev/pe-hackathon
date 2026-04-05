@@ -42,8 +42,11 @@ MLH PE Hackathon project — a URL shortener API built with Flask, Peewee ORM, a
 ## Infrastructure
 
 - **Docker Compose (`compose.yml`):** runs 2 app instances behind nginx load balancer, plus PostgreSQL, Valkey, Prometheus, Alertmanager, Grafana, Loki, and Promtail
-- **Kubernetes (`k8s/`):** deployment manifests for the full stack
+- **Kubernetes (`k8s/`):** deployment manifests for the full stack. `k8s/monitoring/` has workload YAMLs (Deployments, Services, RBAC) only — ConfigMaps are generated from `monitoring/` source files at deploy time.
+- **Monitoring configs (`monitoring/`):** single source of truth for all monitoring configs. Base files (e.g., `prometheus.yml`) are used by Docker Compose; `*.k8s.yml` variants are used for k8s. Shared configs (`alertmanager.yml`, `alert_rules.yml`) have one file for both environments.
 - **CI (`.github/workflows/ci.yml`):** runs tests with PostgreSQL + Valkey service containers on push to `main`/`dev/*` and PRs to `main`
+- **Deploy (`.github/workflows/deploy.yml`):** deploys app to k3s on push to main (via build workflow) or manual dispatch
+- **Deploy Monitoring (`.github/workflows/deploy-monitoring.yml`):** deploys monitoring stack to k3s. Auto-triggers after app deploy by default; comment out the `workflow_run` block to switch to manual-only
 
 ## Key Conventions
 

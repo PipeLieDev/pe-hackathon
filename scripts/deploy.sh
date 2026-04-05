@@ -50,33 +50,8 @@ kubectl rollout status deployment/url-shortener -n "${NAMESPACE}" --timeout=120s
 
 # --- Monitoring namespace ---
 echo ""
-echo "--- Applying monitoring manifests ---"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/namespace.yaml"
-
-# Prometheus
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/prometheus-config.yaml"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/alert-rules-config.yaml"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/prometheus-deployment.yaml"
-
-# Alertmanager
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/alertmanager-config.yaml"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/alertmanager-deployment.yaml"
-
-# Loki
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/loki-config.yaml"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/loki-deployment.yaml"
-
-# Promtail
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/promtail-config.yaml"
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/promtail-daemonset.yaml"
-
-# Grafana dashboard from JSON file
-kubectl create configmap grafana-dashboards \
-  --from-file=url-shortener.json="${SCRIPT_DIR}/docs/IncidentReportQuest/grafanaDashboard.json" \
-  -n "${MONITORING_NS}" --dry-run=client -o yaml | kubectl apply -f -
-
-# Grafana
-kubectl apply -f "${SCRIPT_DIR}/k8s/monitoring/grafana-deployment.yaml"
+echo "--- Deploying monitoring stack ---"
+bash "${SCRIPT_DIR}/scripts/deploy-monitoring.sh"
 
 echo ""
 echo "=== Deployment complete ==="

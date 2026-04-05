@@ -235,34 +235,12 @@ chmod +x scripts/deploy.sh
 ## Step 7: Deploy Monitoring Stack
 
 ```bash
-# Prometheus
-kubectl apply -f k8s/monitoring/prometheus-config.yaml
-kubectl apply -f k8s/monitoring/alert-rules-config.yaml
-kubectl apply -f k8s/monitoring/prometheus-deployment.yaml
-
-# Alertmanager
-kubectl apply -f k8s/monitoring/alertmanager-config.yaml
-kubectl apply -f k8s/monitoring/alertmanager-deployment.yaml
-
-# Loki (log aggregation)
-kubectl apply -f k8s/monitoring/loki-config.yaml
-kubectl apply -f k8s/monitoring/loki-deployment.yaml
-
-# Promtail (log collector — runs on every node)
-kubectl apply -f k8s/monitoring/promtail-config.yaml
-kubectl apply -f k8s/monitoring/promtail-daemonset.yaml
-
-# Grafana dashboard ConfigMap (from JSON file)
-kubectl create configmap grafana-dashboards \
-  --from-file=url-shortener.json=docs/IncidentReportQuest/grafanaDashboard.json \
-  -n monitoring --dry-run=client -o yaml | kubectl apply -f -
-
-# Grafana
-kubectl apply -f k8s/monitoring/grafana-deployment.yaml
-
-# Verify
-kubectl get pods -n monitoring
+chmod +x scripts/deploy-monitoring.sh
+./scripts/deploy-monitoring.sh
 ```
+
+Monitoring configs live in `monitoring/` (single source of truth for both Docker Compose and K8s).
+The script generates K8s ConfigMaps from those files and applies the workload manifests from `k8s/monitoring/`.
 
 ## Step 8: Set Up Self-Hosted GitHub Actions Runner
 

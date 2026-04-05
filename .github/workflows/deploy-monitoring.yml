@@ -1,22 +1,13 @@
 name: Deploy Monitoring Stack
 
 on:
-  # Auto-deploy: triggers after the app deploy succeeds on main.
-  # To switch to manual-only, comment out the 'workflow_run' block below.
-  workflow_run:
-    workflows: ["Deploy to K3s"]
-    types: [completed]
-    branches: [main]
-
-  # Manual deploy: always available via Actions → Run workflow
+  # Manual deploy only: trigger via Actions → Run workflow
   workflow_dispatch:
 
 jobs:
   deploy-monitoring:
     runs-on: self-hosted
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - uses: actions/checkout@v4

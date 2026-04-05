@@ -31,7 +31,13 @@ def _get_redis():
     try:
         import redis
 
-        _redis = redis.from_url(url, decode_responses=True)
+        _redis = redis.from_url(
+            url,
+            decode_responses=True,
+            socket_timeout=1,
+            socket_connect_timeout=1,
+            retry_on_timeout=False,
+        )
         _redis.ping()
     except Exception:
         _DISABLED = True

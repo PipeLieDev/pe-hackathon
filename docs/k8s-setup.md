@@ -266,7 +266,7 @@ kubectl get pods -n monitoring
 
 ## Step 8: Set Up Self-Hosted GitHub Actions Runner
 
-The servers are behind NAT, so we use a self-hosted runner on Node .110 for automated deployments.
+The servers are behind NAT, so we use a [self-hosted runner](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners) on Node .110 for automated deployments.
 
 ### On Node .110:
 

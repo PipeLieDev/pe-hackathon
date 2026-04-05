@@ -6,17 +6,6 @@
 
 **AI Assistance:** Claude Code (Opus 4.6, Sonnet 4.6), OpenCode (Web, CLI) with MiniMax M2.5
 
-## AI Tools Used
-
-| Tool | Model | Purpose |
-|------|-------|---------|
-| Claude Code | Opus 4.6 | CLI-assisted development, code generation, debugging, architecture advice |
-| Claude Code | Sonnet 4.6 | Code reviews, refactoring suggestions |
-| OpenCode Web | MiniMax M2.5 | Interactive web interface for development tasks |
-| OpenCode CLI | MiniMax M2.5 | CLI-assisted file operations, research, code execution |
-
-AI was used as a pair programmer throughout development—generating initial implementations, which were then reviewed and refined manually.
-
 ## Prerequisites
 
 ### 1. uv
@@ -310,6 +299,10 @@ kubectl get pods -n url-shortener
 kubectl rollout undo deployment/url-shortener -n url-shortener
 kubectl rollout status deployment/url-shortener -n url-shortener
 ```
+
+## AI Usage
+
+See [AI_USAGE.md](AI_USAGE.md) for detailed documentation on AI tools and how they were used in this project.
 
 ## License
 

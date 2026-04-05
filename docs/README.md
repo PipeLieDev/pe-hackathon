@@ -24,8 +24,8 @@ A resilient URL shortener service built for production.
 - [Monitoring & Observability](#monitoring--observability)
 - [Deployment](#deployment)
 - [AI Usage](AI_USAGE.md)
-- [Architecture](/docs/ARCHITECTURE.md)
-- [Decision Log](/DECISION_LOG.md)
+- [Architecture](ARCHITECTURE.md)
+- [Decision Log](DECISION_LOG.md)
 - [License](#license)
 
 ## Prerequisites
@@ -271,7 +271,7 @@ Pre-configured dashboard includes: request rate by HTTP method, p99 latency, err
 
 ### Kubernetes (production)
 
-See [docs/k8s-setup.md](docs/k8s-setup.md) for the full K3s cluster setup guide.
+See [k8s-setup.md](k8s-setup.md) for the full K3s cluster setup guide.
 
 **Deploy**
 

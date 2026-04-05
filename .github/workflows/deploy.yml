@@ -18,8 +18,14 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        run: echo "IMAGE_NAME_LC=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
 
       - name: Deploy to K3s
         run: |
@@ -28,9 +34,9 @@ jobs:
           else
             TAG="${{ github.event.workflow_run.head_sha }}"
           fi
-          echo "Deploying ghcr.io/${{ github.repository }}:${TAG}"
+          echo "Deploying ${{ env.IMAGE_NAME_LC }}:${TAG}"
           kubectl set image deployment/url-shortener \
-            url-shortener=ghcr.io/${{ github.repository }}:${TAG} \
+            url-shortener=${{ env.IMAGE_NAME_LC }}:${TAG} \
             -n url-shortener
           kubectl rollout status deployment/url-shortener \
             -n url-shortener --timeout=120s

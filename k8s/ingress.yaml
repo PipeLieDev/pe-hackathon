@@ -1,6 +1,3 @@
-# Optional: Traefik Ingress (K3s built-in).
-# The NodePort service (app-service.yaml) is sufficient for the demo.
-# Use this if you want hostname-based routing.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

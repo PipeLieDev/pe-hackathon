@@ -6,93 +6,98 @@ A URL shortener API deployed on a self-hosted K3s Kubernetes cluster running acr
 
 ## Diagram
 
-```
-                              ┌──────────┐
-                              │ CLIENTS  │
-                              └────┬─────┘
-                                   │
-                                   ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│              KUBERNETES CLUSTER (K3s) — 3x Dell Optiplex Nodes               │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐  │
-│  │  url-shortener namespace                                               │  │
-│  │                                                                        │  │
-│  │   Traefik Ingress (:80)                                                │  │
-│  │        │                                                               │  │
-│  │        ▼                                                               │  │
-│  │   Service (NodePort :30080)                                            │  │
-│  │        │                                                               │  │
-│  │        ├──────────────┬──────────────┐                                 │  │
-│  │        ▼              ▼              ▼                                  │  │
-│  │   ┌─────────┐   ┌─────────┐   ┌─────────┐                             │  │
-│  │   │ Flask   │   │ Flask   │   │ Flask   │   Deployment: 3 replicas     │  │
-│  │   │ app :5000│   │ app :5000│   │ app :5000│   Image: ghcr.io/...      │  │
-│  │   │         │   │         │   │         │                              │  │
-│  │   │ /health │   │ /health │   │ /health │   Liveness + Readiness      │  │
-│  │   │ /ready  │   │ /ready  │   │ /ready  │   probes configured         │  │
-│  │   │ /metrics│   │ /metrics│   │ /metrics│                              │  │
-│  │   │ /users  │   │ /users  │   │ /users  │                              │  │
-│  │   │ /urls   │   │ /urls   │   │ /urls   │                              │  │
-│  │   │ /events │   │ /events │   │ /events │                              │  │
-│  │   └────┬────┘   └────┬────┘   └────┬────┘                             │  │
-│  │        │              │              │                                  │  │
-│  │        └──────────────┼──────────────┘                                 │  │
-│  │                       │                                                │  │
-│  │          ┌── cache ───┤                                                │  │
-│  │          │            │                                                │  │
-│  │          │   HIT ─────┤ ◄── X-Cache: HIT header                       │  │
-│  │          │            │                                                │  │
-│  │          │   MISS ──► │                                                │  │
-│  │          ▼            ▼                                                │  │
-│  │   ┌──────────────┐  ┌──────────────────────────┐                      │  │
-│  │   │ VALKEY       │  │ POSTGRESQL (CNPG)        │                      │  │
-│  │   │ :6379        │  │                          │                      │  │
-│  │   │              │  │ 3 instances (HA)         │                      │  │
-│  │   │ master +     │  │ Streaming replication    │                      │  │
-│  │   │ 3 replicas   │  │ 5Gi persistent storage   │                      │  │
-│  │   │ 3 sentinels  │  │                          │                      │  │
-│  │   │              │  │ tables:                  │                      │  │
-│  │   │ · user cache │  │   users                  │                      │  │
-│  │   │ · url  cache │  │   urls                   │                      │  │
-│  │   │ · list cache │  │   events                 │                      │  │
-│  │   │ TTL: 30s     │  │                          │                      │  │
-│  │   │ No persist   │  │ hackathon_db             │                      │  │
-│  │   └──────────────┘  └──────────────────────────┘                      │  │
-│  └────────────────────────────────────────────────────────────────────────┘  │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐  │
-│  │  monitoring namespace                                                  │  │
-│  │                                                                        │  │
-│  │   ┌────────────┐    ┌─────────┐    ┌──────────────┐    ┌──────────┐   │  │
-│  │   │ Prometheus │◄───│ Flask   │───►│ Alertmanager │───►│ Discord  │   │  │
-│  │   │ :30090     │    │/metrics │    │   :9093      │    │ Webhook  │   │  │
-│  │   └─────┬──────┘    └─────────┘    └──────────────┘    └──────────┘   │  │
-│  │         │                                                              │  │
-│  │         │    ┌──────────┐    ┌──────────┐                              │  │
-│  │         └──► │ Grafana  │◄───│   Loki   │ ◄── Promtail (DaemonSet)    │  │
-│  │              │  :30030  │    │  :3100   │                              │  │
-│  │              └──────────┘    └──────────┘                              │  │
-│  └────────────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    clients([Clients])
+
+    subgraph cluster["K3s Cluster — 3x Dell Optiplex Nodes"]
+
+        subgraph ns-app["url-shortener namespace"]
+            ingress["Traefik Ingress :80"]
+            svc["Service :30080"]
+            app1["Flask Pod 1 :5000"]
+            app2["Flask Pod 2 :5000"]
+            app3["Flask Pod 3 :5000"]
+            valkey[("Valkey :6379\nmaster + 3 replicas\n3 sentinels\nTTL: 30s")]
+            pg[("PostgreSQL CNPG :5432\n3 instances HA\nStreaming replication\n5Gi storage")]
+        end
+
+        subgraph ns-mon["monitoring namespace"]
+            prometheus["Prometheus :30090\n7d retention"]
+            grafana["Grafana :30030"]
+            loki["Loki :3100"]
+            promtail["Promtail\nDaemonSet"]
+            alertmanager["Alertmanager :9093"]
+            discord([Discord Webhook])
+        end
+
+    end
+
+    clients --> ingress
+    ingress --> svc
+    svc --> app1
+    svc --> app2
+    svc --> app3
+
+    app1 -- "cache HIT\nX-Cache: HIT" --> valkey
+    app1 -- "cache MISS / write" --> pg
+    app2 --> valkey
+    app2 --> pg
+    app3 --> valkey
+    app3 --> pg
+    valkey -. "MISS fallback" .-> pg
+
+    prometheus -- "scrape /metrics\nevery 15s" --> app1
+    prometheus -- "scrape" --> app2
+    prometheus -- "scrape" --> app3
+    prometheus --> grafana
+    prometheus --> alertmanager
+    alertmanager --> discord
+
+    promtail -- "pod logs" --> loki
+    loki --> grafana
 ```
 
 ## Data Flow
 
+```mermaid
+graph LR
+    subgraph read["Read Path"]
+        direction LR
+        C1([Client]) --> T1[Traefik] --> S1[Service] --> F1[Flask Pod]
+        F1 -- HIT --> V1[(Valkey)] --> R1([Response\nX-Cache: HIT])
+        F1 -- MISS --> P1[(PostgreSQL)] --> V1
+        P1 --> R2([Response])
+    end
 ```
-read path
-  client → Traefik Ingress → Service → Flask pod → Valkey HIT  → response (X-Cache: HIT)
-                                                  → Valkey MISS → PostgreSQL → cache → response
-write path
-  client → Traefik Ingress → Service → Flask pod → PostgreSQL (write)
-                                                  → Valkey (invalidate affected keys)
-                                                  → events table (append log entry)
-observability path
-  pod stdout  → Promtail (DaemonSet) → Loki → Grafana
-  pod /metrics ← Prometheus scrape (K8s service discovery) → Grafana
-                                                            → Alertmanager → Discord
-CI/CD path
-  push to main → CI (tests + coverage) → build image → push to GHCR → deploy to K3s (rolling update)
+
+```mermaid
+graph LR
+    subgraph write["Write Path"]
+        direction LR
+        C2([Client]) --> T2[Traefik] --> S2[Service] --> F2[Flask Pod]
+        F2 --> P2[(PostgreSQL write)]
+        F2 -. invalidate .-> V2[(Valkey)]
+        F2 --> E2[(events table)]
+    end
+```
+
+```mermaid
+graph LR
+    subgraph obs["Observability Path"]
+        direction LR
+        pods[Pod stdout] --> PT[Promtail] --> LK[Loki] --> GF[Grafana]
+        metrics[Pod /metrics] --> PM[Prometheus] --> GF
+        PM --> AM[Alertmanager] --> DC([Discord])
+    end
+```
+
+```mermaid
+graph LR
+    subgraph cicd["CI/CD Path"]
+        direction LR
+        push[Push to main] --> ci[CI: Tests\n+ Coverage] --> build[Build image] --> ghcr[Push to GHCR] --> deploy[Deploy to K3s\nrolling update]
+    end
 ```
 
 ## Component Reference
@@ -140,7 +145,7 @@ All cached entries expire after **30 seconds** (TTL). Responses served from cach
 
 **Resources:** 250m CPU / 256Mi memory (requests), 500m CPU / 512Mi memory (limits) per node.
 
-> [!note]
+> Note:
 > Valkey is a community-maintained hard fork of Redis 7.2 (the last BSD-licensed version), governed by the Linux Foundation. It is API-compatible with Redis. No code changes are needed to switch and it remains fully open source under the BSD license, avoiding the SSPL licensing concerns introduced by Redis in 2024.
 
 ### 4. PostgreSQL: Persistent Storage (CNPG, `:5432`)
@@ -198,11 +203,11 @@ Discord is the team's coordination channel, so routing alerts there means no add
 
 ## CI/CD Pipeline
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Push to   │────►│  CI: Tests  │────►│ Build: Push │────►│  Deploy to  │
-│    main     │     │ + Coverage  │     │  to GHCR    │     │    K3s      │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+```mermaid
+graph LR
+    A[Push to main] --> B[CI: Tests + Coverage]
+    B --> C[Build: Push to GHCR]
+    C --> D[Deploy to K3s]
 ```
 
 | Workflow                  | Trigger                          | Runner         | What it does                                                    |

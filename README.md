@@ -4,7 +4,7 @@ A resilient URL shortener service built for production.
 
 **Tech Stack:**
 
-![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white) ![Peewee ORM](https://img.shields.io/badge/Peewee_ORM-3776AB?style=for-the-badge&logo=python&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![Valkey](https://img.shields.io/badge/Valkey-DC382D?style=for-the-badge&logo=redis&logoColor=white) ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white) ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![uv](https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white) ![Peewee ORM](https://img.shields.io/badge/Peewee_ORM-3776AB?style=for-the-badge&logo=python&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![uv](https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white) ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white) ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white) ![Valkey](https://img.shields.io/badge/Valkey-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 
 **CI Status:**
 
@@ -23,6 +23,7 @@ A resilient URL shortener service built for production.
 - [Deployment](#deployment)
 - [AI Usage](AI_USAGE.md)
 - [Architecture](/docs/ARCHITECTURE.md)
+- [Decision Log](/DECISION_LOG.md)
 - [License](#license)
 
 ## Prerequisites
@@ -148,7 +149,7 @@ docker compose down
 
 ## API Endpoints
 
-Full interactive docs available at `/apidocs/` via Swagger UI.
+Full interactive docs available at `/apidocs/` via Swagger UI, or try the live API at **https://pipeliedev.github.io/pe-hackathon/**
 
 | Endpoint | Method | Description |
 |---|---|---|
@@ -261,23 +262,6 @@ Pre-configured dashboard includes: request rate by HTTP method, p99 latency, err
 | `NoRequests` | No traffic for 5 minutes |
 
 ## Deployment
-
-### Docker Compose (recommended for development)
-
-```bash
-# Start the full stack
-docker compose up --build -d
-
-# Stop the stack
-docker compose down
-```
-
-**Rollback:** rebuild from the previous image.
-
-```bash
-docker compose stop
-docker compose up -d --build
-```
 
 ### Kubernetes (production)
 

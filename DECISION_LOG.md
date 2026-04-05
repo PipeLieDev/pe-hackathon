@@ -23,31 +23,6 @@
 
 ---
 
-## Why Nginx as Load Balancer?
-
-**Decision:** Use Nginx in front of multiple Flask app instances.
-
-**Alternatives Considered:**
-- Docker Compose built-in (no)
-- Flask with multiple workers (Gunicorn)
-- Cloud provider LB (AWS ALB, etc.)
-- HAProxy
-
-**Reasons:**
-1. **Horizontal Scaling**: Easy to add more app instances
-2. **Health Checks**: Nginx can detect and skip dead containers
-3. **Static Files**: Can serve them directly (future-proofing)
-4. **SSL Termination**: Can handle HTTPS in one place
-5. **Industry Standard**: Battle-tested, reliable
-6. **Low Resource**: Minimal CPU/memory overhead
-
-**Trade-offs:**
-- Additional complexity (more services to run)
-- Need to configure properly (upstream, health checks)
-- Single point of failure (mitigated by running on multiple nodes in k8s)
-
----
-
 ## Why Flask + Peewee instead of Django/FastAPI?
 
 **Decision:** Use Flask with Peewee ORM.
@@ -72,6 +47,60 @@
 
 ---
 
+docker compose cannot scale like k8s
+
+---
+
+## Why Valkey over Redis?
+
+**Decision:** Use Valkey (Redis fork) instead of Redis.
+
+**Alternatives Considered:**
+- Redis (original)
+- KeyDB (Redis fork with multi-threading)
+- DragonflyDB (modern, higher performance)
+
+**Reasons:**
+1. **Open Source Governance**: Redis moved to RSPLv2 license (SSPL) in 2024 - Valkey is fully open source (BSD)
+2. **Future-Proof**: Avoid potential vendor lock-in from Redis Ltd.
+3. **API Compatibility**: 100% Redis-compatible - drop-in replacement
+4. **Active Development**: Backed by cloud providers, Linux Foundation
+5. **No Code Changes**: Existing Redis clients work without modification
+
+**Trade-offs:**
+- Smaller community than Redis (but growing)
+- Fewer third-party integrations
+- Newer project (less battle-tested)
+
+---
+
+## Why Kubernetes over Docker Compose?
+
+**Decision:** Deploy to Kubernetes (k3s) instead of Docker Compose for production.
+
+**Alternatives Considered:**
+- Docker Compose (simpler)
+- Nomad (simpler than k8s)
+- AWS ECS/Fargate (managed)
+- Terraform + cloud VMs (simpler)
+
+**Reasons:**
+1. **Scaling**: Horizontal pod autoscaling, load balancing built-in
+2. **Self-Healing**: Automatic restarts, health checks, node management
+3. **Industry Standard**: Most common orchestrator, widely understood
+4. **Declarative**: Infrastructure as Code - GitOps friendly
+5. **Namespace Isolation**: Better multi-environment separation (dev/staging/prod)
+6. **Rolling Updates**: Zero-downtime deployments out of the box
+7. **Ephemeral Storage**: Stateless app design - pods can be replaced freely
+
+**Trade-offs:**
+- Steeper learning curve
+- More complex setup
+- Higher resource overhead
+- Requires cluster management (k3s light-weight but still extra work)
+
+---
+
 ## Why Prometheus + Grafana for Monitoring?
 
 **Decision:** Use Prometheus for metrics, Grafana for visualization.
@@ -93,30 +122,6 @@
 - Need to understand PromQL (learning curve)
 - Storage can grow large (retention policies needed)
 - Push vs Pull model (Prometheus = pull)
-
----
-
-## Why PostgreSQL over MySQL/MongoDB?
-
-**Decision:** Use PostgreSQL for data storage.
-
-**Alternatives Considered:**
-- MySQL (simpler, less features)
-- MongoDB (NoSQL, different query patterns)
-- SQLite (not for production)
-- CockroachDB (distributed, overkill)
-
-**Reasons:**
-1. **Relational Model**: URLs, Users, Events have clear relationships
-2. **ACID**: Important for financial/transactional data integrity
-3. **JSON Support**: Can store flexible `details` field in events table
-4. **Mature**: Well-tested, great tooling
-5. **Provided in Stack**: docker-compose includes postgres
-
-**Trade-offs:**
-- Schema changes require migrations
-- Horizontal scaling harder than NoSQL
-- Overkill for simple data (but fine for hackathon)
 
 ---
 

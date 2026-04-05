@@ -4,7 +4,7 @@ metadata:
   name: url-shortener
   namespace: url-shortener
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: url-shortener
@@ -17,8 +17,6 @@ spec:
     spec:
       imagePullSecrets:
         - name: ghcr-pull-secret
-      nodeSelector:
-        kubernetes.io/hostname: optiplexnode1
       containers:
         - name: url-shortener
           image: ghcr.io/pipeliedev/pe-hackathon:latest

@@ -4,7 +4,7 @@ metadata:
   name: postgres-cluster
   namespace: url-shortener
 spec:
-  instances: 1
+  instances: 3
 
   postgresql:
     parameters:
@@ -24,16 +24,6 @@ spec:
 
   storage:
     size: 5Gi
-
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: role
-                operator: In
-                values:
-                  - db
 
   resources:
     requests:

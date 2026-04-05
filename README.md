@@ -144,13 +144,16 @@ Full interactive docs available at `/apidocs/` via Swagger UI.
 ## Project Structure
 
 ```
-mlh-pe-hackathon/
+pe-hackathon/
 ├── app/
 │   ├── __init__.py          # App factory, Prometheus metrics
 │   ├── database.py          # DatabaseProxy, BaseModel, connection hooks
 │   ├── cache.py             # Valkey/Redis caching layer
 │   ├── logging.py           # Structured JSON logging
+│   ├── schemas.py           # Marshmallow schemas for request/response validation
+│   ├── utils.py             # Utility functions
 │   ├── models/
+│   │   ├── __init__.        # Model imports for Peewee registration
 │   │   ├── user.py
 │   │   ├── url.py
 │   │   └── event.py
@@ -162,10 +165,15 @@ mlh-pe-hackathon/
 ├── tests/                   # Unit & integration tests
 ├── monitoring/              # Prometheus, Grafana, Alertmanager configs
 ├── k8s/                     # Kubernetes manifests
+├── scripts/                 # Deployment & seeding scripts
+├── docs/                    # Documentation
 ├── compose.yml              # Full stack (app + monitoring)
 ├── compose.dev.yml          # Dev only (DB + Valkey)
+├── Dockerfile               # App container definition
+├── pyproject.toml           # Project dependencies
+├── run.py                   # Application entry point
 ├── locustfile.py            # Load testing
-└── scripts/seed.py          # Seed data script
+└── RUNBOOK.md               # Operations runbook
 ```
 
 ## Running Tests

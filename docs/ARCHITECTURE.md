@@ -14,19 +14,19 @@ graph TB
 
         subgraph ns-app["url-shortener namespace"]
             ingress["Traefik Ingress :80"]
-            svc["Service :30080"]
+            svc["Service"]
             app1["Flask Pod 1 :5000"]
             app2["Flask Pod 2 :5000"]
             app3["Flask Pod 3 :5000"]
-            valkey[("Valkey :6379\nmaster + 3 replicas\n3 sentinels\nTTL: 30s")]
-            pg[("PostgreSQL CNPG :5432\n3 instances HA\nStreaming replication\n5Gi storage")]
+            valkey[("Valkey :6379<br/>master + 3 replicas<br/>3 sentinels<br/>TTL: 30s")]
+            pg[("PostgreSQL CNPG :5432<br/>3 instances HA<br/>Streaming replication<br/>5Gi storage")]
         end
 
         subgraph ns-mon["monitoring namespace"]
-            prometheus["Prometheus :30090\n7d retention"]
+            prometheus["Prometheus :30090<br/>7d retention"]
             grafana["Grafana :30030"]
             loki["Loki :3100"]
-            promtail["Promtail\nDaemonSet"]
+            promtail["Promtail<br/>DaemonSet"]
             alertmanager["Alertmanager :9093"]
             discord([Discord Webhook])
         end
@@ -39,7 +39,7 @@ graph TB
     svc --> app2
     svc --> app3
 
-    app1 -- "cache HIT\nX-Cache: HIT" --> valkey
+    app1 -- "cache HIT<br/>X-Cache: HIT" --> valkey
     app1 -- "cache MISS / write" --> pg
     app2 --> valkey
     app2 --> pg
@@ -47,7 +47,7 @@ graph TB
     app3 --> pg
     valkey -. "MISS fallback" .-> pg
 
-    prometheus -- "scrape /metrics\nevery 15s" --> app1
+    prometheus -- "scrape /metrics<br/>every 15s" --> app1
     prometheus -- "scrape" --> app2
     prometheus -- "scrape" --> app3
     prometheus --> grafana
@@ -65,7 +65,7 @@ graph LR
     subgraph read["Read Path"]
         direction LR
         C1([Client]) --> T1[Traefik] --> S1[Service] --> F1[Flask Pod]
-        F1 -- HIT --> V1[(Valkey)] --> R1([Response\nX-Cache: HIT])
+        F1 -- HIT --> V1[(Valkey)] --> R1([Response<br/>X-Cache: HIT])
         F1 -- MISS --> P1[(PostgreSQL)] --> V1
         P1 --> R2([Response])
     end
@@ -96,7 +96,7 @@ graph LR
 graph LR
     subgraph cicd["CI/CD Path"]
         direction LR
-        push[Push to main] --> ci[CI: Tests\n+ Coverage] --> build[Build image] --> ghcr[Push to GHCR] --> deploy[Deploy to K3s\nrolling update]
+        push[Push to main] --> ci[CI: Tests<br/>+ Coverage] --> build[Build image] --> ghcr[Push to GHCR] --> deploy[Deploy to K3s<br/>rolling update]
     end
 ```
 

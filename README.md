@@ -1,13 +1,22 @@
-# MLH PE Hackathon — URL Shortener API
+# MLH PE Hackathon: URL Shortener API
 
 A URL shortener API built with Flask, Peewee ORM, and PostgreSQL. Supports user management, shortened URLs, and analytics events.
 
-**Stack:** Flask · Peewee ORM · PostgreSQL · Valkey · Prometheus · Grafana · nginx
+**Stack:**
+
+- Flask
+- Peewee ORM
+- PostgreSQL
+- Valkey
+- Prometheus
+- Grafana
+- nginx
 
 ## Prerequisites
 
 - **uv** — a fast Python package manager that handles Python versions, virtual environments, and dependencies automatically.
   Install it with:
+
   ```bash
   # macOS / Linux
   curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -20,7 +29,7 @@ A URL shortener API built with Flask, Peewee ORM, and PostgreSQL. Supports user 
 
 ## uv Basics
 
-`uv` manages your Python version, virtual environment, and dependencies automatically — no manual `python -m venv` needed.
+`uv` manages your Python version, virtual environment, and dependencies automatically. Without manual `python -m venv` needed.
 
 | Command | What it does |
 |---------|--------------|
@@ -33,7 +42,7 @@ A URL shortener API built with Flask, Peewee ORM, and PostgreSQL. Supports user 
 
 ### Option 1: Local Development
 
-Uses `compose.dev.yml` which runs only the infrastructure services (PostgreSQL, Valkey) — you run the app yourself with `uv`.
+Uses `compose.dev.yml` which runs only the infrastructure services (PostgreSQL, Valkey). Run the app yourself with `uv`.
 
 ```bash
 # 1. Start dev dependencies (DB + Valkey)
@@ -97,13 +106,13 @@ mlh-pe-hackathon/
 │   ├── logging.py           # Structured JSON logging
 │   ├── models/
 │   │   ├── user.py          # User model
-│   │   ├── url.py          # URL model
-│   │   └── event.py        # Analytics event model
+│   │   ├── url.py           # URL model
+│   │   └── event.py         # Analytics event model
 │   └── routes/
 │       ├── __init__.py      # register_routes()
-│       ├── users.py        # User endpoints
-│       ├── urls.py         # URL endpoints
-│       └── events.py       # Event endpoints
+│       ├── users.py         # User endpoints
+│       ├── urls.py          # URL endpoints
+│       └── events.py        # Event endpoints
 ├── tests/                   # Unit & integration tests
 ├── monitoring/              # Prometheus, Grafana, Alertmanager configs
 ├── k8s/                     # Kubernetes manifests

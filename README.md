@@ -298,6 +298,10 @@ kubectl rollout undo deployment/url-shortener -n url-shortener
 kubectl rollout status deployment/url-shortener -n url-shortener
 ```
 
+## AI Usage
+
+See [AI_USAGE.md](AI_USAGE.md) for detailed documentation on AI tools and how they were used in this project.
+
 ## License
 
 MIT

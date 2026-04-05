@@ -71,5 +71,5 @@ class EventList(MethodView):
             )
         except IntegrityError:
             abort(422, message="Missing required fields: url_id, user_id, and event_type are required")
-        EVENT_RECORDED.inc()
+        EVENT_RECORDED.labels(event_type=event_type).inc()
         return serialize_model(event)

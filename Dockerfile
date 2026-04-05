@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 5000
 
 # Run the application
-CMD ["uv", "run", "gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "run:app"]
+CMD ["uv", "run", "gunicorn", "--preload", "-w", "2", "-b", "0.0.0.0:5000", "run:app"]

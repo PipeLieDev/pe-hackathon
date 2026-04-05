@@ -60,6 +60,14 @@ jobs:
         run: |
           uv run pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=70 --junitxml=pytest.xml | tee pytest-coverage.txt
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Diff coverage check
         if: github.event_name == 'pull_request'
         run: |

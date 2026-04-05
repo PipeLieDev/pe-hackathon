@@ -8,7 +8,7 @@ A resilient URL shortener service built for production.
 
 **CI Status:**
 
-[![codecov](https://codecov.io/gh/PipeLieDev/pe-hackathon/branch/main/graph/badge.svg)](https://codecov.io/gh/PipeLieDev/pe-hackathon) [![Build and push Docker image](https://img.shields.io/github/actions/workflow/status/PipeLieDev/pe-hackathon/build.yml?branch=main&label=Build+%26+Push+Docker&style=for-the-badge&logo=docker&logoColor=white)](https://github.com/PipeLieDev/pe-hackathon/actions/workflows/build.yml) [![Run tests and collect coverage](https://img.shields.io/github/actions/workflow/status/PipeLieDev/pe-hackathon/ci.yml?branch=main&label=Tests+%26+Coverage&style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/PipeLieDev/pe-hackathon/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/PipeLieDev/pe-hackathon/graph/badge.svg?token=ZMCM5CV9CQ&style=for-the-badge)](https://codecov.io/gh/PipeLieDev/pe-hackathon) [![Build and push Docker image](https://img.shields.io/github/actions/workflow/status/PipeLieDev/pe-hackathon/python_ci.yml?branch=main&label=Build+%26+Push+Docker&style=for-the-badge&logo=docker&logoColor=white)](https://github.com/PipeLieDev/pe-hackathon/actions/workflows/python_ci.yml) [![Run tests and collect coverage](https://img.shields.io/github/actions/workflow/status/PipeLieDev/pe-hackathon/python_ci.yml?branch=main&label=Tests+%26+Coverage&style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/PipeLieDev/pe-hackathon/actions/workflows/python_ci.yml)
 
 ## Index
 

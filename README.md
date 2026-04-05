@@ -2,6 +2,8 @@
 
 A resilient URL shortener service built for production.
 
+![URL Shortener Demo](/docs/images/url-shortener-demo.png)
+
 **Tech Stack:**
 
 ![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white) ![Peewee ORM](https://img.shields.io/badge/Peewee_ORM-3776AB?style=for-the-badge&logo=python&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![uv](https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white) ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white) ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white) ![Valkey](https://img.shields.io/badge/Valkey-DC382D?style=for-the-badge&logo=redis&logoColor=white)
@@ -151,6 +153,8 @@ docker compose down
 
 Full interactive docs available at `/apidocs/` via Swagger UI, or try the live API at **https://pipeliedev.github.io/pe-hackathon/**
 
+![API Demo](/docs/images/api-demo.png)
+
 | Endpoint | Method | Description |
 |---|---|---|
 | `/health` | GET | Health check |
@@ -251,6 +255,8 @@ Available when running the full stack via `docker compose up --build`.
 ### Grafana Dashboards
 
 Pre-configured dashboard includes: request rate by HTTP method, p99 latency, error rates, and application resource usage.
+
+![Grafana Dashboard](/docs/images/grafana-demo.png)
 
 ### Alert Rules
 

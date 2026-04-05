@@ -36,3 +36,39 @@ groups:
     annotations:
       summary: "High CPU usage detected"
       description: "CPU usage is {{ $value }}% over the last 5 minutes."
+
+  - alert: HighErrorRateCritical
+    expr: (sum(rate(flask_http_request_total{status=~"5.."}[5m])) / sum(rate(flask_http_request_total[5m]))) > 0.25
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Critical error rate"
+      description: "5xx error rate is above 25% (current: {{ $value | humanizePercentage }})."
+
+  - alert: HighAppCPU
+    expr: rate(process_cpu_seconds_total{job="flask_app"}[5m]) > 0.8
+    for: 3m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Flask app CPU usage"
+      description: "Flask app CPU usage is above 80% for 3 minutes."
+
+  - alert: HighMemory
+    expr: process_resident_memory_bytes{job="flask_app"} / 1024 / 1024 > 512
+    for: 3m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage"
+      description: "Flask app is using {{ $value | humanize }}MB of memory."
+
+  - alert: NoRequests
+    expr: sum(rate(flask_http_request_total{job="flask_app"}[5m])) == 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "No traffic detected"
+      description: "Flask app has received zero requests for 5 minutes."

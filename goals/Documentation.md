@@ -10,7 +10,7 @@
 ## **🥉 Bronze: The Map**
 
 - [x] **README:** Setup instructions so clear a freshman could run your app.  
-- [ ] **Diagram:** Draw the architecture. Boxes and arrows showing App→ DB.  
+- [x] **Diagram:** Draw the architecture. Boxes and arrows showing App→ DB.  
 - [x] **API Docs:** List your endpoints (GET/POST) and what they do.
 
 ## **🥈 Silver: The Manual**

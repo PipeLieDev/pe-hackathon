@@ -35,3 +35,6 @@ judging/
 
 # K8s secrets (contains passwords)
 k8s/secrets.yaml
+
+# Generated API docs (built in CI)
+docs/api/

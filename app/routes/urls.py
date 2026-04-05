@@ -177,4 +177,12 @@ class UrlRedirect(MethodView):
             REDIRECT_NOT_FOUND.inc()
             abort(404, message="URL is not active")
         REDIRECT_TOTAL.inc()
+        Event.create(
+            url_id=url.id,
+            user_id=url.user_id,
+            event_type="redirect",
+            timestamp=datetime.now(),
+            details=json.dumps({"short_code": short_code, "original_url": url.original_url}),
+        )
+        EVENT_RECORDED.labels(event_type="redirect").inc()
         return redirect(url.original_url, code=302)

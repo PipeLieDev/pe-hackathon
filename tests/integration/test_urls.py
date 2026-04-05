@@ -103,9 +103,14 @@ def test_delete_url_not_found(client):
 
 
 def test_redirect_url(client, sample_url):
+    from app.models.event import Event
+
     res = client.get("/urls/abc123/redirect")
     assert res.status_code == 302
     assert res.headers["Location"] == "https://example.com"
+    event = Event.select().where(Event.event_type == "redirect").first()
+    assert event is not None
+    assert event.url_id_id == sample_url
 
 
 def test_redirect_url_not_found(client):

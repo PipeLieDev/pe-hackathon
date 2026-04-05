@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
+from peewee import IntegrityError
 
 from app import EVENT_RECORDED
 from app.models.event import Event
@@ -60,12 +61,15 @@ class EventList(MethodView):
         if user_id and not User.get_or_none(User.id == user_id):
             abort(404, message="User not found")
 
-        event = Event.create(
-            url_id=url_id,
-            user_id=user_id,
-            event_type=event_type,
-            timestamp=datetime.now(),
-            details=json.dumps(details),
-        )
+        try:
+            event = Event.create(
+                url_id=url_id,
+                user_id=user_id,
+                event_type=event_type,
+                timestamp=datetime.now(),
+                details=json.dumps(details),
+            )
+        except IntegrityError:
+            abort(422, message="Missing required fields: url_id, user_id, and event_type are required")
         EVENT_RECORDED.inc()
         return serialize_model(event)

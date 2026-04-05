@@ -1,188 +1,133 @@
 # Incident Response Runbook
 
-## In Case of Emergency
+## Service Endpoints
 
-When an alert fires, follow this checklist in order:
+| Service | URL |
+|---|---|
+| App | `http://192.168.1.112:30080` (or .110, .111) |
+| Prometheus | `http://192.168.1.112:30090` (or .110, .111) |
+| Grafana | `http://192.168.1.112:30030` (or .110, .111) |
+| Alertmanager | `kubectl port-forward svc/alertmanager-svc -n monitoring 9093:9093` → `http://localhost:9093` |
 
-1. **Access the environment**
-   - Access services via NodePorts:
-     - Prometheus: `http://192.168.1.112:30090` (or .110, .111)
-     - Grafana: `http://192.168.1.112:30030` (or .110, .111)
-     - App: `http://192.168.1.112:30080` (or .110, .111)
-     - Alertmanager: Run `kubectl port-forward svc/alertmanager-svc -n monitoring 9093:9093`, then access `http://localhost:9093`
+Find node IPs: `kubectl get nodes -o wide`
 
-2. **Confirm the alert**
-   - Check Prometheus targets: `http://192.168.1.112:30090/targets`
-   - Check Grafana dashboards: `http://192.168.1.112:30030`
-   - For Alertmanager: Run `kubectl port-forward svc/alertmanager-svc -n monitoring 9093:9093`, then access `http://localhost:9093`
-   - Identify alert name, severity, affected target, and status
+---
 
-3. **Check current service state**
-   - Check pods: `kubectl get pods -n url-shortener -o wide`
-   - Confirm Prometheus target status: `http://192.168.1.112:30090/targets`
+## When an Alert Fires
 
-4. **Capture evidence**
-   - Save the alert details and timestamps
-   - Collect relevant logs and metrics screenshots
-
-5. **Triage by alert type**
-   - ServiceDown → check pod availability
-   - HighErrorRate → inspect app errors and traffic patterns
-   - HighLatency → inspect resource usage and slow queries
-
-6. **Resolve and document**
-   - Apply fix, then verify the alert returns to normal
-   - Note root cause, resolution, and next preventative action
+1. **Confirm** — Open Alertmanager and identify the alert name, severity, and affected target
+2. **Assess** — Check pod state and Prometheus targets:
+   - `kubectl get pods -n url-shortener -o wide`
+   - Prometheus targets page: `<prometheus-url>/targets`
+3. **Triage** — Jump to the relevant section below
+4. **Resolve** — Apply fix, verify alert clears, document root cause
 
 ---
 
 ## Service Down Alert
 
-**Symptoms**: Prometheus alert `ServiceDown` fired (app instance not reachable)
+> `ServiceDown` — app instance not reachable
 
-**What it means**: Prometheus cannot scrape a Flask app target. This usually means the pod is crashed, unreachable, or the service is not listening.
+Prometheus cannot scrape the app. Pod is likely crashed, pending, or not listening.
 
-**Immediate Actions**:
-1. Check pod status: `kubectl get pods -n url-shortener -o wide`
-2. If pod is in CrashLoopBackOff, check logs: `kubectl logs <pod-name> -n url-shortener --previous`
-3. Check deployment events: `kubectl describe deployment url-shortener -n url-shortener`
-4. Verify database connectivity: `kubectl exec -n url-shortener <pod-name> -- pg_isready -h postgres-cluster-rw -U postgres`
-5. Check node resources if pods can't schedule: `kubectl describe node <node-name>`
+**Investigate**:
+1. `kubectl get pods -n url-shortener -o wide`
+2. `kubectl logs <pod-name> -n url-shortener --previous` (if CrashLoopBackOff)
+3. `kubectl describe deployment url-shortener -n url-shortener`
+4. `kubectl exec -n url-shortener <pod-name> -- pg_isready -h postgres-cluster-rw -U postgres`
+5. `kubectl describe node <node-name>` (if pods stuck in Pending)
 
-**Diagnosis**:
-- CrashLoopBackOff: app is crashing on startup — check logs for config or dependency errors
-- Pending pods: insufficient resources or scheduling constraints
-- OOMKilled: pod exceeded memory limits
-- DNS failure: target name not resolvable inside the cluster
+**Common causes**:
+- CrashLoopBackOff → config or dependency error in logs
+- Pending → insufficient node resources
+- OOMKilled → pod exceeded memory limits
 
-**Resolution**:
-- Restart the pod: `kubectl delete pod <pod-name> -n url-shortener` (deployment will recreate it)
-- Restart the deployment: `kubectl rollout restart deployment/url-shortener -n url-shortener`
-- If the app repeatedly crashes, fix the root cause from logs and redeploy
+**Fix**:
+- Delete pod to let deployment recreate it: `kubectl delete pod <pod-name> -n url-shortener`
+- Or restart deployment: `kubectl rollout restart deployment/url-shortener -n url-shortener`
+- If recurring, fix root cause from logs and redeploy
 
 ---
 
 ## High Error Rate Alert
 
-**Symptoms**: `HighErrorRate` fired (> 5% 5xx error rate for 2 minutes)
+> `HighErrorRate` — > 5% 5xx error rate for 2 minutes
 
-**What it means**: A high percentage of requests returned 5xx responses over the last 5 minutes.
+**Investigate**:
+1. `kubectl logs -n url-shortener -l app=url-shortener --tail 100 | grep -i error`
+2. Check Grafana for failing endpoint patterns
+3. `kubectl get cluster -n url-shortener` (database health)
+4. `kubectl exec -n url-shortener <pod-name> -- redis-cli -h valkey ping` (Valkey health)
+5. `kubectl top pods -n url-shortener`
 
-**Immediate Actions**:
-1. Check logs from all app pods: `kubectl logs -n url-shortener -l app=url-shortener --tail 100 | grep -i error`
-2. Identify failing request patterns in Grafana (`http://192.168.1.112:30030`)
-3. Confirm if the issue is isolated to a single endpoint or system-wide
-4. Check database cluster health: `kubectl get cluster -n url-shortener`
-5. Verify Valkey connectivity: `kubectl exec -n url-shortener <pod-name> -- redis-cli -h valkey ping`
-6. Check pod resource usage: `kubectl top pods -n url-shortener`
-
-**Diagnosis**:
+**Common causes**:
 - Database connection failures
-- API or code exceptions
-- Bad request payloads or validation issues
-- Dependency timeouts / upstream failures
+- Code exceptions or bad deployments
+- Dependency timeouts
 
-**Resolution**:
-- Fix the failing code or configuration
-- Roll back deployment if needed: `kubectl rollout undo deployment/url-shortener -n url-shortener`
-- Restart app services after the root cause is fixed
+**Fix**:
+- Roll back if caused by recent deploy: `kubectl rollout undo deployment/url-shortener -n url-shortener`
+- Fix failing code or configuration and redeploy
 
 ---
 
 ## High Latency Alert
 
-**Symptoms**: `HighLatency` fired (95th percentile request latency > 2 seconds for 2 minutes)
+> `HighLatency` — p95 request latency > 2 seconds for 2 minutes
 
-**What it means**: The 95th percentile request latency is above the configured threshold, indicating slow responses.
+**Investigate**:
+1. `kubectl top pods -n url-shortener`
+2. `kubectl top nodes`
+3. Check Grafana latency panels
+4. `kubectl exec -n url-shortener postgres-cluster-1 -- pg_stat_activity` (slow queries)
+5. `kubectl exec -n url-shortener valkey-node-0 -- redis-cli info stats`
 
-**Immediate Actions**:
-1. Check pod resource usage: `kubectl top pods -n url-shortener`
-2. Check node resources: `kubectl top nodes`
-3. Review app performance metrics in Grafana (`http://192.168.1.112:30030`)
-4. Check database performance: `kubectl exec -n url-shortener postgres-cluster-1 -- pg_stat_activity`
-5. Review Valkey performance: `kubectl exec -n url-shortener valkey-node-0 -- redis-cli info stats`
-
-**Diagnosis**:
+**Common causes**:
 - Slow database queries
-- High CPU or memory usage
-- Network latency or I/O waits
-- Backpressure from downstream services
+- High CPU/memory usage
+- Network or I/O bottlenecks
 
-**Resolution**:
-- Optimize the slow path or query
-- Scale deployment if needed: `kubectl scale deployment url-shortener -n url-shortener --replicas=4`
-- Add caching if appropriate
+**Fix**:
+- Scale up to reduce load: `kubectl scale deployment url-shortener -n url-shortener --replicas=4`
+- Document slow queries or bottlenecks found for follow-up fix after the incident
 
 ---
 
 ## HA Scenarios
 
 **Node Failure**:
-- Symptoms: Multiple pods become unavailable, alerts fire for affected services
-- Check node status: `kubectl get nodes`
-- If node is NotReady, investigate: `kubectl describe node <node-name>`
-- Pods will automatically reschedule to healthy nodes (if anti-affinity allows)
-- Monitor cluster recovery: `kubectl get pods -n url-shortener -w`
+- `kubectl get nodes` — look for NotReady
+- `kubectl describe node <node-name>` to investigate
+- Pods auto-reschedule to healthy nodes; monitor with `kubectl get pods -n url-shortener -w`
 
 **Database Failover**:
-- Symptoms: PostgreSQL cluster shows degraded status
-- Check cluster health: `kubectl get cluster -n url-shortener`
-- Monitor failover: `kubectl logs -n cnpg-system -l app.kubernetes.io/name=cloudnative-pg --follow`
+- `kubectl get cluster -n url-shortener` — check cluster health
+- `kubectl logs -n cnpg-system -l app.kubernetes.io/name=cloudnative-pg --follow` — monitor failover
 - Verify new primary: `kubectl get pods -n url-shortener -l cnpg.io/cluster=postgres-cluster -o custom-columns=NAME:.metadata.name,ROLE:.metadata.labels.role`
 
 **Valkey Sentinel Failover**:
-- Symptoms: Cache operations fail, Valkey pods restart
-- Check Valkey cluster: `kubectl get pods -n url-shortener -l app.kubernetes.io/name=valkey`
-- Monitor Sentinel logs: `kubectl logs -n url-shortener valkey-node-0 -c sentinel`
-- Verify master election: `kubectl exec -n url-shortener valkey-node-0 -- redis-cli -p 26379 sentinel masters`
+- `kubectl get pods -n url-shortener -l app.kubernetes.io/name=valkey`
+- `kubectl logs -n url-shortener valkey-node-0 -c sentinel`
+- Verify master: `kubectl exec -n url-shortener valkey-node-0 -- redis-cli -p 26379 sentinel masters`
 
 ---
 
-## Common Emergency Commands
+## Post-Incident
 
-- Check pod status: `kubectl get pods -n url-shortener -o wide`
-- Check logs: `kubectl logs -n url-shortener -l app=url-shortener --tail 100`
-- Restart deployment: `kubectl rollout restart deployment/url-shortener -n url-shortener`
-- Check node status: `kubectl get nodes`
-- Check database cluster: `kubectl get cluster -n url-shortener`
-- Access monitoring services via NodePorts:
-  - Prometheus: `http://192.168.1.112:30090`
-  - Grafana: `http://192.168.1.112:30030`
-  - App: `http://192.168.1.112:30080`
-  - Alertmanager: `kubectl port-forward svc/alertmanager-svc -n monitoring 9093:9093` then `http://localhost:9093`
-
-To find the node IP:
-- `kubectl get nodes -o wide`
-
----
-
-## Post-Incident Notes
-
-After the incident:
-- Document the root cause and fix
+- Document root cause and fix
 - Update alert thresholds if needed
-- Note any policy, deployment, or dependency changes
-- Review whether the alert produced a useful signal or noise
+- Review whether the alert was useful signal or noise
 
 ---
 
-## Troubleshooting Access Issues
+## Troubleshooting Access
 
-**Cannot access NodePort services:**
-- Verify firewall allows access to node ports (30080, 30090, 30030)
-- Check if nodes are reachable: `ping 192.168.1.112`
-- Confirm services are exposed: `kubectl get svc -n monitoring -o wide`
-- Try different node IPs (.110, .111) if one node is down
+**Cannot reach NodePort services:**
+- Check firewall allows ports 30080, 30090, 30030
+- `ping 192.168.1.112` — verify node is reachable
+- `kubectl get svc -n monitoring -o wide` — confirm services are exposed
+- Try other node IPs (.110, .111) if one is down
 
-**kubectl port-forward not working for Alertmanager:**
-- Check if services exist: `kubectl get svc -n monitoring`
-- Verify pods are running: `kubectl get pods -n monitoring`
-- Check service selectors match pod labels
-
----
-
-## Existing Alert Summaries
-
-- `ServiceDown`: app instance not reachable
-- `HighErrorRate`: > 5% 5xx error rate for 2 minutes
-- `HighLatency`: 95th percentile request latency > 2 seconds for 2 minutes
+**Alertmanager port-forward not working:**
+- `kubectl get svc -n monitoring` — verify service exists
+- `kubectl get pods -n monitoring` — verify pod is running

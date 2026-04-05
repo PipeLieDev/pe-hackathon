@@ -10,7 +10,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Ensure monitoring namespace
         run: kubectl apply -f k8s/monitoring/namespace.yaml

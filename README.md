@@ -1,12 +1,8 @@
-# MLH PE Hackathon — Flask + Peewee + PostgreSQL Template
+# MLH PE Hackathon — URL Shortener API
 
-A minimal hackathon starter template. You get the scaffolding and database wiring — you build the models, routes, and CSV loading logic.
+A URL shortener API built with Flask, Peewee ORM, and PostgreSQL. Supports user management, shortened URLs, and analytics events.
 
-**Stack:** Flask · Peewee ORM · PostgreSQL · uv
-
-## **Important**
-
-You need to work with around the seed files that you can find in [MLH PE Hackathon](https://mlh-pe-hackathon.com) platform. This will help you build the schema for the database and have some data to do some testing and submit your project for judging. If you need help with this, reach out on Discord or on the Q&A tab on the platform.
+**Stack:** Flask · Peewee ORM · PostgreSQL · Valkey · Prometheus · Grafana · nginx
 
 ## Prerequisites
 
@@ -20,7 +16,7 @@ You need to work with around the seed files that you can find in [MLH PE Hackath
   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
   ```
   For other methods see the [uv installation docs](https://docs.astral.sh/uv/getting-started/installation/).
-- PostgreSQL running locally (you can use Docker or a local instance)
+- Docker & Docker Compose
 
 ## uv Basics
 
@@ -47,13 +43,10 @@ docker compose -f compose.dev.yml up -d
 uv sync
 
 # 3. Configure environment
-cp .env.example .env   # DATABASE_HOST=localhost, DATABASE_PORT=5432
+cp .env.example .env
 
 # 4. Run the server
 uv run run.py
-
-# Or run with Gunicorn (production-like)
-uv run gunicorn run:app -b 0.0.0.0:5000
 
 # 5. Verify
 curl http://localhost:5000/health
@@ -67,258 +60,137 @@ docker compose -f compose.dev.yml down
 
 ```bash
 # Start all services including monitoring
-docker-compose up -d
+docker compose up --build
 
-# The app will be available at http://localhost:5001
+# The app will be available at http://localhost (via nginx)
 # Monitoring stack:
 # - Prometheus: http://localhost:9090
 # - Grafana: http://localhost:3000 (admin/admin)
 # - Alertmanager: http://localhost:9093
 # - Loki (logs): http://localhost:3100
-# - Database: localhost:5433 (external), db:5432 (internal)
+```
+
+## API Endpoints
+
+The API is documented via Swagger UI at `/apidocs/`:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/metrics` | GET | Prometheus metrics |
+| `/users` | POST | Register a user |
+| `/users` | GET | List users |
+| `/urls` | POST | Create a shortened URL |
+| `/urls` | GET | List URLs |
+| `/urls/<short_code>` | GET | Redirect to original URL |
+| `/urls/<short_code>/stats` | GET | Get URL statistics |
+| `/events` | GET | List analytics events |
+
+## Project Structure
+
+```
+mlh-pe-hackathon/
+├── app/
+│   ├── __init__.py          # App factory, Prometheus metrics
+│   ├── database.py          # DatabaseProxy, BaseModel, connection hooks
+│   ├── cache.py             # Valkey/Redis caching layer
+│   ├── logging.py           # Structured JSON logging
+│   ├── models/
+│   │   ├── user.py          # User model
+│   │   ├── url.py          # URL model
+│   │   └── event.py        # Analytics event model
+│   └── routes/
+│       ├── __init__.py      # register_routes()
+│       ├── users.py        # User endpoints
+│       ├── urls.py         # URL endpoints
+│       └── events.py       # Event endpoints
+├── tests/                   # Unit & integration tests
+├── monitoring/              # Prometheus, Grafana, Alertmanager configs
+├── k8s/                     # Kubernetes manifests
+├── compose.yml              # Full stack (app + monitoring)
+├── compose.dev.yml          # Dev only (DB + Valkey)
+├── locustfile.py            # Load testing
+└── scripts/seed.py          # Seed data script
+```
+
+## Running Tests
+
+```bash
+# Start dev dependencies
+docker compose -f compose.dev.yml up -d
+
+# Create test database (first time only)
+docker exec pe-hackathon-db-1 psql -U postgres -c "CREATE DATABASE hackathon_test_db;"
+
+# Run all tests
+uv run pytest
+
+# Run with coverage (requires 70% minimum)
+uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=70
+
+# Run only unit tests (no DB needed)
+uv run pytest tests/unit
+
+# Run only integration tests
+uv run pytest tests/integration
+
+# Run a specific test
+uv run pytest tests/integration/test_users.py::test_name -v
+```
+
+## Load Testing
+
+```bash
+uv run locust -f locustfile.py --headless -u 50 -r 10 --run-time 60s --host http://localhost:5000
 ```
 
 ## Monitoring & Observability
 
-This project includes comprehensive monitoring with Prometheus, Grafana, and Alertmanager for incident response.
+### Accessing Services (Full Stack)
 
-**Requires Docker** - Start with `docker-compose up -d`
-
-### Starting the Monitoring Stack
-
-```bash
-# Start all services including monitoring
-docker-compose up -d
-
-# Or start just the app for development
-uv run run.py
-```
-
-### Accessing Services
-
-- **Flask App**: http://localhost:5001
+- **App**: http://localhost (via nginx load balancer)
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Alertmanager**: http://localhost:9093
 - **Loki**: http://localhost:3100
 
-### Metrics Endpoints
+### Grafana Dashboards
 
-- **App Metrics**: http://localhost:5001/metrics (Prometheus format)
-- **Health Check**: http://localhost:5001/health
+The project includes a pre-configured Grafana dashboard showing:
+- Request rate by HTTP method
+- p99 latency
+- Error rates
+- Application resource usage
 
-### Viewing Logs
+### Alert Rules
 
-For manual log inspection, use Docker logs:
+Pre-configured alerts:
+- HighErrorRateCritical (>5% errors)
+- HighAppCPU (>80% CPU)
+- HighMemory (>80% memory)
+- NoRequests (no traffic for 5 minutes)
 
-```bash
-# View app logs
-docker logs pe-hackathon-app-1
+## Caching
 
-# Follow logs in real-time
-docker logs -f pe-hackathon-app-1
+The app uses Valkey (Redis-compatible) for caching:
+- URL lookups are cached
+- Cache hit/miss is indicated via `X-Cache` header
+- Graceful fallback if Valkey is unavailable
 
-# View logs with timestamps
-docker logs --timestamps pe-hackathon-app-1
-```
+## Kubernetes Deployment
 
-Logs are output in structured JSON format for easy parsing and monitoring.
+The `k8s/` directory contains manifests for deploying to Kubernetes. See `k8s/README.md` for details.
 
-### Grafana Setup
+## Configuration
 
-1. Open http://localhost:3000
-2. Login with admin/admin
-3. Add Prometheus data source: URL = `http://prometheus:9090`
-4. Add PostgreSQL data source with your DB credentials
-5. Add Loki data source: URL = `http://loki:3100`
-6. Import or create dashboards for your metrics and logs
+Copy `.env.example` to `.env` and configure:
 
-### Log Aggregation with Loki
-
-Your application logs are automatically collected by Promtail and stored in Loki. In Grafana, you can:
-
-- **Query logs**: Use Loki queries like `{job="flask_app"}` to search logs
-- **Correlate logs with metrics**: View logs and metrics side-by-side in dashboards
-- **Set up log-based alerts**: Create alerts based on log patterns
-
-Example Loki queries:
-- `{job="flask_app"}` - All Flask app logs
-- `{job="flask_app", level="ERROR"}` - Error logs only
-- `{job="flask_app"} |~ "connection failed"` - Logs containing specific text
-
-```
-mlh-pe-hackathon/
-├── app/
-│   ├── __init__.py          # App factory (create_app)
-│   ├── database.py          # DatabaseProxy, BaseModel, connection hooks
-│   ├── models/
-│   │   └── __init__.py      # Import your models here
-│   └── routes/
-│       └── __init__.py      # register_routes() — add blueprints here
-├── .env.example             # DB connection template
-├── .gitignore               # Python + uv gitignore
-├── .python-version          # Pin Python version for uv
-├── pyproject.toml           # Project metadata + dependencies
-├── run.py                   # Entry point: uv run run.py
-└── README.md
-```
-
-## How to Add a Model
-
-1. Create a file in `app/models/`, e.g. `app/models/product.py`:
-
-```python
-from peewee import CharField, DecimalField, IntegerField
-
-from app.database import BaseModel
-
-
-class Product(BaseModel):
-    name = CharField()
-    category = CharField()
-    price = DecimalField(decimal_places=2)
-    stock = IntegerField()
-```
-
-2. Import it in `app/models/__init__.py`:
-
-```python
-from app.models.product import Product
-```
-
-3. Create the table (run once in a Python shell or a setup script):
-
-```python
-from app.database import db
-from app.models.product import Product
-
-db.create_tables([Product])
-```
-
-## How to Add Routes
-
-1. Create a blueprint in `app/routes/`, e.g. `app/routes/products.py`:
-
-```python
-from flask import Blueprint, jsonify
-from playhouse.shortcuts import model_to_dict
-
-from app.models.product import Product
-
-products_bp = Blueprint("products", __name__)
-
-
-@products_bp.route("/products")
-def list_products():
-    products = Product.select()
-    return jsonify([model_to_dict(p) for p in products])
-```
-
-2. Register it in `app/routes/__init__.py`:
-
-```python
-def register_routes(app):
-    from app.routes.products import products_bp
-    app.register_blueprint(products_bp)
-```
-
-## How to Load CSV Data
-
-```python
-import csv
-from peewee import chunked
-from app.database import db
-from app.models.product import Product
-
-def load_csv(filepath):
-    with open(filepath, newline="") as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
-
-    with db.atomic():
-        for batch in chunked(rows, 100):
-            Product.insert_many(batch).execute()
-```
-
-## Running Tests
-
-Tests are split into **unit** and **integration** directories:
-
-```
-tests/
-├── conftest.py                  # App factory + client (shared)
-├── unit/                        # Fast, no database required
-│   ├── test_utils.py
-│   └── test_schemas.py
-└── integration/                 # Requires PostgreSQL (hackathon_test_db)
-    ├── conftest.py              # DB cleanup + sample data fixtures
-    ├── test_health.py
-    ├── test_users.py
-    ├── test_urls.py
-    └── test_events.py
-```
-
-```bash
-# 1. Start dev dependencies (DB + Valkey)
-docker compose -f compose.dev.yml up -d
-
-# 2. Create the test database (first time only)
-docker exec pe-hackathon-valkey-1 valkey-cli ping  # verify Valkey is up
-docker exec pe-hackathon-db-1 psql -U postgres -c "CREATE DATABASE hackathon_test_db;"
-
-# 3. Run all tests
-uv run pytest
-
-# 4. Run only unit tests (no DB needed)
-uv run pytest tests/unit
-
-# 5. Run only integration tests
-uv run pytest tests/integration
-
-# 6. Run tests with coverage report
-uv run pytest --cov=app --cov-report=term-missing
-
-# 7. Run a specific test file
-uv run pytest tests/integration/test_users.py -v
-```
-
-You can override the test database name with the `TEST_DATABASE_NAME` environment variable.
-
-## Useful Peewee Patterns
-
-```python
-from peewee import fn
-from playhouse.shortcuts import model_to_dict
-
-# Select all
-products = Product.select()
-
-# Filter
-cheap = Product.select().where(Product.price < 10)
-
-# Get by ID
-p = Product.get_by_id(1)
-
-# Create
-Product.create(name="Widget", category="Tools", price=9.99, stock=50)
-
-# Convert to dict (great for JSON responses)
-model_to_dict(p)
-
-# Aggregations
-avg_price = Product.select(fn.AVG(Product.price)).scalar()
-total = Product.select(fn.SUM(Product.stock)).scalar()
-
-# Group by
-from peewee import fn
-query = (Product
-         .select(Product.category, fn.COUNT(Product.id).alias("count"))
-         .group_by(Product.category))
-```
-
-## Tips
-
-- Use `model_to_dict` from `playhouse.shortcuts` to convert model instances to dictionaries for JSON responses.
-- Wrap bulk inserts in `db.atomic()` for transactional safety and performance.
-- The template uses `teardown_appcontext` for connection cleanup, so connections are closed even when requests fail.
-- Check `.env.example` for all available configuration options.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_HOST` | localhost | PostgreSQL host |
+| `DATABASE_PORT` | 5432 | PostgreSQL port |
+| `DATABASE_NAME` | hackathon_db | Database name |
+| `DATABASE_USER` | postgres | Database user |
+| `DATABASE_PASSWORD` | postgres | Database password |
+| `REDIS_URL` | - | Valkey/Redis URL (optional) |
+| `LOG_LEVEL` | INFO | Logging level |

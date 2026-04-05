@@ -20,11 +20,11 @@ sentinel:
 master:
   resources:
     requests:
-      memory: 64Mi
-      cpu: 50m
+      memory: 256Mi
+      cpu: 250m
     limits:
-      memory: 128Mi
-      cpu: 100m
+      memory: 512Mi
+      cpu: 500m
   persistence:
     enabled: false  # cache-only, no need to persist
 
@@ -32,10 +32,10 @@ replica:
   replicaCount: 3
   resources:
     requests:
-      memory: 64Mi
-      cpu: 50m
+      memory: 256Mi
+      cpu: 250m
     limits:
-      memory: 128Mi
-      cpu: 100m
+      memory: 512Mi
+      cpu: 500m
   persistence:
     enabled: false

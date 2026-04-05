@@ -9,6 +9,10 @@ import json
 import os
 
 from flask import g
+from prometheus_client import Counter
+
+CACHE_HITS = Counter('url_shortener_cache_hits_total', 'Cache hits')
+CACHE_MISSES = Counter('url_shortener_cache_misses_total', 'Cache misses')
 
 _redis = None
 _DISABLED = False
@@ -39,16 +43,20 @@ def cache_get(key):
     r = _get_redis()
     if r is None:
         g.x_cache = "MISS"
+        CACHE_MISSES.inc()
         return None
     try:
         value = r.get(key)
         if value is not None:
             g.x_cache = "HIT"
+            CACHE_HITS.inc()
             return json.loads(value)
         g.x_cache = "MISS"
+        CACHE_MISSES.inc()
         return None
     except Exception:
         g.x_cache = "MISS"
+        CACHE_MISSES.inc()
         return None
 
 

@@ -34,3 +34,12 @@ data:
             annotations:
               summary: "High request latency"
               description: "95th percentile latency is {{ $value }}s."
+
+          - alert: HighCPUUsage
+            expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage detected"
+              description: "CPU usage is {{ $value }}% over the last 5 minutes."

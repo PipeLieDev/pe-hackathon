@@ -9,23 +9,15 @@ clients:
   - url: http://loki-svc.monitoring.svc.cluster.local:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: kubernetes-pods
-    kubernetes_sd_configs:
-      - role: pod
-        namespaces:
-          names:
-            - url-shortener
-    relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_app]
-        regex: url-shortener
-        action: keep
-      - source_labels: [__meta_kubernetes_pod_name]
-        target_label: pod
-      - source_labels: [__meta_kubernetes_pod_node_name]
-        target_label: node
-      - source_labels: [__meta_kubernetes_namespace]
-        target_label: namespace
+  - job_name: flask_app
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: flask_app
+          __path__: /var/log/pods/url-shortener_url-shortener-*/*/*.log
     pipeline_stages:
+      - cri: {}
       - json:
           expressions:
             level: level

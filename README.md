@@ -74,7 +74,7 @@ docker compose up --build
 # The app will be available at http://localhost (via nginx)
 # Monitoring stack:
 # - Prometheus: http://localhost:9090
-# - Grafana: http://localhost:3000 (admin/admin)
+# - Grafana: http://localhost:30030
 # - Alertmanager: http://localhost:9093
 # - Loki (logs): http://localhost:3100
 ```
@@ -159,7 +159,7 @@ uv run locust -f locustfile.py --headless -u 50 -r 10 --run-time 60s --host http
 
 - **App**: http://localhost (via nginx load balancer)
 - **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (admin/admin)
+- **Grafana**: http://localhost:30030 (admin/admin)
 - **Alertmanager**: http://localhost:9093
 - **Loki**: http://localhost:3100
 

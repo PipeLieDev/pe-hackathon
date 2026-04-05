@@ -147,7 +147,7 @@ Deploy a broken image and watch the rollout stall without taking down healthy po
 
 ```bash
 # Set a non-existent image tag
-kubectl set image deployment/url-shortener url-shortener=ghcr.io/cyanghxst/pe-hackathon:broken -n url-shortener
+kubectl set image deployment/url-shortener url-shortener=ghcr.io/pipeliedev/pe-hackathon:broken -n url-shortener
 
 # Watch the rollout — it should stall with new pods in ImagePullBackOff
 kubectl rollout status deployment/url-shortener -n url-shortener --timeout=30s

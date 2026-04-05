@@ -4,15 +4,12 @@ metadata:
   name: url-shortener
   namespace: url-shortener
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: url-shortener
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
+    type: Recreate
   template:
     metadata:
       labels:
@@ -20,16 +17,11 @@ spec:
     spec:
       imagePullSecrets:
         - name: ghcr-pull-secret
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app: url-shortener
-              topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        kubernetes.io/hostname: optiplexnode1
       containers:
         - name: url-shortener
-          image: ghcr.io/cyanghxst/pe-hackathon:latest
+          image: ghcr.io/pipeliedev/pe-hackathon:latest
           ports:
             - containerPort: 5000
               name: http
@@ -48,8 +40,8 @@ spec:
               port: 5000
             initialDelaySeconds: 30
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
+            timeoutSeconds: 5
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /ready
@@ -57,11 +49,11 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 5
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 5
           resources:
             requests:
-              memory: 512Mi
-              cpu: 1000m
-            limits:
               memory: 2Gi
-              cpu: 2000m
+              cpu: 2
+            limits:
+              memory: 4Gi
+              cpu: 4

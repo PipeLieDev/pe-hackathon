@@ -4,7 +4,7 @@ metadata:
   name: postgres-cluster
   namespace: url-shortener
 spec:
-  instances: 3
+  instances: 1
 
   postgresql:
     parameters:

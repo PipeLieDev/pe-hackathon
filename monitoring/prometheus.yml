@@ -13,7 +13,15 @@ alerting:
 scrape_configs:
   - job_name: 'flask_app'
     static_configs:
-      - targets: ['app:5000', 'app1:5000', 'app2:5000']
+      - targets: ['app:5000']
+        labels:
+          node: 'Node 1'
+      - targets: ['app1:5000']
+        labels:
+          node: 'Node 2'
+      - targets: ['app2:5000']
+        labels:
+          node: 'Node 3'
 
   - job_name: 'node'
     static_configs:

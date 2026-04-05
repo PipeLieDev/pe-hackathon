@@ -307,8 +307,8 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (method, status) (rate(flask_http_request_total{job=\"flask_app\"}[1m]))",
-          "legendFormat": "{{method}} [{{status}}]",
+          "expr": "sum by (node, method, status) (rate(flask_http_request_total{job=\"flask_app\"}[1m]))",
+          "legendFormat": "{{node}} — {{method}} [{{status}}]",
           "range": true,
           "refId": "A"
         }

@@ -24,3 +24,22 @@ scrape_configs:
       - source_labels: [__meta_kubernetes_endpoint_port_name]
         regex: http
         action: keep
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: __tmp_hash
+        modulus: 3
+        action: hashmod
+      - source_labels: [__tmp_hash]
+        target_label: node
+        regex: '0'
+        replacement: 'Node 1'
+        action: replace
+      - source_labels: [__tmp_hash]
+        target_label: node
+        regex: '1'
+        replacement: 'Node 2'
+        action: replace
+      - source_labels: [__tmp_hash]
+        target_label: node
+        regex: '2'
+        replacement: 'Node 3'
+        action: replace

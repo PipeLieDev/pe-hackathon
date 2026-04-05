@@ -2,32 +2,37 @@
 
 This guide sets up a 3-node K3s high-availability cluster with embedded etcd, running the URL Shortener API, PostgreSQL, Valkey, and a full monitoring stack (Prometheus, Grafana, Loki, Alertmanager).
 
-## Architecture
+## Node Layout
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  K3s HA Cluster (3 server nodes, embedded etcd)                 │
-│                                                                 │
-│  Node .110            Node .111            Node .112            │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
-│  │ API pod      │    │ API pod      │    │ API pod      │     │
-│  │ PG primary   │    │ PG replica   │    │ PG replica   │     │
-│  │ Valkey master│    │ Valkey repl  │    │ Valkey repl  │     │
-│  │ Sentinel     │    │ Sentinel     │    │ Sentinel     │     │
-│  │ GH Runner    │    │              │    │              │     │
-│  └──────────────┘    └──────────────┘    └──────────────┘     │
-│                                                                 │
-│  CloudNativePG operator (cnpg-system ns)                       │
-│  Prometheus + Grafana + Loki + Alertmanager (monitoring ns)    │
-│                                                                 │
-│  NodePort: 30080 (API), 30030 (Grafana), 30090 (Prometheus)   │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph cluster["K3s HA Cluster"]
+        direction LR
+        subgraph node110["Node .110"]
+            a1["API pod"]
+            pg1["PG primary"]
+            vk1["Valkey master"]
+            s1["Sentinel"]
+            runner["GH Actions Runner"]
+        end
+        subgraph node111["Node .111"]
+            a2["API pod"]
+            pg2["PG replica"]
+            vk2["Valkey replica"]
+            s2["Sentinel"]
+        end
+        subgraph node112["Node .112"]
+            a3["API pod"]
+            pg3["PG replica"]
+            vk3["Valkey replica"]
+            s3["Sentinel"]
+        end
+    end
 ```
 
-- **API**: 3 replicas with pod anti-affinity (1 per node) — survives any single node failure
-- **PostgreSQL**: 3-instance CloudNativePG cluster (1 primary + 2 replicas) with automatic failover — survives any single node failure
-- **Valkey**: 3-node Sentinel HA (1 master + 2 replicas + 3 sentinels) with automatic failover, graceful fallback in app
-- **Monitoring**: Prometheus scrapes `/metrics` from all API pods and PostgreSQL instances
+**NodePorts:** 30080 (API), 30030 (Grafana), 30090 (Prometheus)
+
+Each node runs one of each workload. Any single node can go down and the cluster continues serving traffic — see [ARCHITECTURE.md](ARCHITECTURE.md) for full component details and data flow diagrams.
 
 ## Prerequisites
 
@@ -379,64 +384,4 @@ kubectl get pods -n url-shortener -o wide
 
 ## Troubleshooting
 
-### Pods stuck in ImagePullBackOff
-The GHCR pull secret is missing or incorrect:
-```bash
-kubectl describe pod <pod-name> -n url-shortener
-# Check Events section for auth errors
-kubectl delete secret ghcr-pull-secret -n url-shortener
-# Recreate with correct credentials (Step 4)
-```
-
-### PostgreSQL cluster not healthy
-Check CNPG operator logs and cluster status:
-```bash
-# Check cluster status
-kubectl get cluster -n url-shortener
-kubectl describe cluster postgres-cluster -n url-shortener
-
-# Check operator logs
-kubectl logs -n cnpg-system -l app.kubernetes.io/name=cloudnative-pg
-
-# Check individual pod logs
-kubectl logs postgres-cluster-1 -n url-shortener
-```
-
-### PostgreSQL pods not scheduling
-Node labels may be missing:
-```bash
-kubectl get nodes --show-labels | grep role
-kubectl label node <node-name> role=db
-```
-
-### CNPG operator not installed
-```bash
-# Verify the operator is running
-kubectl get pods -n cnpg-system
-# If empty, install it:
-helm repo add cnpg https://cloudnative-pg.github.io/charts
-helm install cnpg cnpg/cloudnative-pg -n cnpg-system --create-namespace
-```
-
-### API pods not starting (CrashLoopBackOff)
-Check logs:
-```bash
-kubectl logs <pod-name> -n url-shortener
-# Usually a database connection issue — verify postgres cluster is healthy first
-kubectl get cluster -n url-shortener
-kubectl get pods -n url-shortener -l cnpg.io/cluster=postgres-cluster
-```
-
-### K3s node won't join
-Check the token matches and Node 1 is reachable:
-```bash
-curl -k https://192.168.1.110:6443
-# Should return "Unauthorized" (means the API server is up)
-```
-
-### Reset and start fresh
-```bash
-# On each node
-/usr/local/bin/k3s-uninstall.sh
-# Then re-run the install steps
-```
+See [k8s-troubleshooting.md](k8s-troubleshooting.md) for common issues and fixes.

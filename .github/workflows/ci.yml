@@ -1,83 +1,66 @@
 name: CI
-
 on:
-  push:
-    branches: [main, dev/*]
-  pull_request:
-    branches: [main]
-
+    push:
+        branches: [main, dev/*]
+    pull_request:
+        branches: [main]
 permissions:
-  contents: read
-  pull-requests: write
-
+    contents: read
+    pull-requests: write
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:18-alpine
+    test:
+        runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres:18-alpine
+                env:
+                    POSTGRES_DB: hackathon_test_db
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+            valkey:
+                image: valkey/valkey:8-alpine
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "valkey-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
         env:
-          POSTGRES_DB: hackathon_test_db
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      valkey:
-        image: valkey/valkey:8-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "valkey-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_NAME: hackathon_test_db
-      DATABASE_HOST: localhost
-      DATABASE_PORT: 5432
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --dev
-
-      - name: Run tests with coverage
-        run: |
-          uv run pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=70 --junitxml=pytest.xml | tee pytest-coverage.txt
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml
-          flags: unittests
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Diff coverage check
-        if: github.event_name == 'pull_request'
-        run: |
-          uv run diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --diff-range-notation=.. --fail-under=80 | tee diff-cover.txt
-
-      - name: Pytest coverage comment
-        if: github.event_name == 'pull_request'
-        uses: MishaKav/pytest-coverage-comment@main
-        with:
-          pytest-coverage-path: pytest-coverage.txt
-          pytest-xml-coverage-path: coverage.xml
-          junitxml-path: pytest.xml
-          report-only-changed-files: true
+            DATABASE_NAME: hackathon_test_db
+            DATABASE_HOST: localhost
+            DATABASE_PORT: 5432
+            DATABASE_USER: postgres
+            DATABASE_PASSWORD: postgres
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+            - uses: astral-sh/setup-uv@v4
+              with:
+                  enable-cache: true
+            - name: Install dependencies
+              run: uv sync --dev
+            - name: Run tests with coverage
+              run: |
+                  uv run pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=70 --junitxml=pytest.xml | tee pytest-coverage.txt
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v5
+              with:
+                  files: ./coverage.xml
+                  flags: unittests
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+            - name: Diff coverage check
+              if: github.event_name == 'pull_request'
+              run: |
+                  uv run diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --diff-range-notation=.. --fail-under=80 | tee diff-cover.txt
+            - name: Pytest coverage comment
+              if: github.event_name == 'pull_request'
+              uses: MishaKav/pytest-coverage-comment@main
+              with:
+                  pytest-coverage-path: pytest-coverage.txt
+                  pytest-xml-coverage-path: coverage.xml
+                  junitxml-path: pytest.xml
+                  report-only-changed-files: true

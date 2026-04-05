@@ -42,7 +42,11 @@ def create_app():
     from app.models import Event, Url, User
 
     with app.app_context():
-        db.create_tables([User, Url, Event], safe=True)
+        try:
+            db.create_tables([User, Url, Event], safe=True)
+        except Exception:
+            # Handle race condition when multiple workers create tables concurrently
+            pass
 
     @app.after_request
     def add_cache_header(response):

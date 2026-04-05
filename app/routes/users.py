@@ -87,7 +87,7 @@ class UserList(MethodView):
         return result
 
     @users_bp.arguments(UserSchema)
-    @users_bp.response(201, UserSchema)
+    @users_bp.response(200, UserSchema)
     @users_bp.alt_response(422, schema=ErrorSchema)
     def post(self, user_data):
         """Create a new user"""
